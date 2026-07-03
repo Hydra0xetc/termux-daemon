@@ -46,14 +46,14 @@ jobs:
       - name: Build Termux binary
         run: |
           docker run --rm \
+            --privileged \
             -v "$PWD:/workspace" \
             -w /workspace \
-            ghcr.io/termux/termux-docker:aarch64 \
+            termux/termux-docker:aarch64 \
             bash -c '
               pkg update -y
-              pkg install -y clang make
-
-              make -C src/cpp
+              pkg install -y clang
+              cc -o src/cpp/android-daemon src/cpp/android-daemon.c
             '
 
       - name: Package release
