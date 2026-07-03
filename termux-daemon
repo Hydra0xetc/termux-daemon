@@ -2,10 +2,8 @@
 
 HERE="$(dirname "$(readlink -f "$0")")"
 
-source $HERE/config.sh
-
 export PATH=/system/bin
-export CLASSPATH="$HERE/$OUTPUT_APK"
+export CLASSPATH="$HERE/termux-daemon.apk"
 
 exec app_process64 -Xnoimage-dex2oat / \
   $(echo "$PACKAGE_NAME" | tr / .).Main "$@"
