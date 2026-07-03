@@ -2,6 +2,8 @@ name: Build Release Project
 
 on:
   push:
+    branches:
+      - master
     tags:
       - "v*"
 
@@ -43,17 +45,24 @@ jobs:
           chmod +x build.sh
           ./build.sh
 
+
       - name: Build Termux binary
         run: |
+          mkdir -p build-output
+          chmod 777 build-output
+
           docker run --rm \
-            --privileged \
+            --user root \
             -v "$PWD:/workspace" \
             -w /workspace \
             termux/termux-docker:aarch64 \
             bash -c '
-              pkg update -y
-              pkg install -y clang
-              cc -o src/cpp/android-daemon src/cpp/android-daemon.c
+              id
+              whoami
+              apt update -y
+              apt install -y clang
+
+              cc -o /workspace/build-output/android-daemon src/cpp/android-daemon.c
             '
 
       - name: Package release
@@ -61,7 +70,7 @@ jobs:
           mkdir -p release
 
           cp termux-daemon release/
-          cp src/cpp/android-daemon release/
+          cp build-output/android-daemon release/
           cp termux-daemon.apk release/
 
           tar -czvf \
@@ -71,5 +80,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
+
           files: |
             termux-daemon-${{ github.ref_name }}.tar.gz

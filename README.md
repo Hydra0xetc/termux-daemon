@@ -47,7 +47,7 @@ user	0m0.020s
 sys	0m0.000s
 ```
 ### termux clipboard manager
-```
+```console
 $ time termux-clipboard-set $(cat src/java/org/clipboard/ClipboardModule.java)
 
 real	0m2.449s
@@ -65,7 +65,7 @@ sys	0m0.010s
 Cheats a little bit—it's actually still using Termux's provider/resolver.
 but still BLAZINGLY FAST
 See [ContentResolverModule.java](./src/java/org/termux/daemon/ContentResolverModule.java#L93)
-```
+```console
 $ time android-daemon open termux-daemon
 
 real    0m0.047s
@@ -73,7 +73,7 @@ user    0m0.010s
 sys     0m0.000s
 ```
 ### termux content resolver
-```
+```console
 $ time termux-open termux-daemon
 
 real    0m2.003s
