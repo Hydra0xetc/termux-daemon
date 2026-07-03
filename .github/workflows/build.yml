@@ -1,0 +1,75 @@
+name: Build Release Project
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Configure Android Tools
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          D8_PATH=$(find "$SDK_ROOT/build-tools" -name d8 | sort -V | tail -n 1)
+
+          [ -n "$D8_PATH" ] || {
+            echo "d8 not found"
+            exit 1
+          }
+
+          sed -i "s|^D8=.*|D8=$D8_PATH|" config.sh
+          sed -i "s|^MINIFIED=.*|MINIFIED=false|" config.sh
+
+      - name: Build project
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Build Termux binary
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            -w /workspace \
+            ghcr.io/termux/termux-docker:aarch64 \
+            bash -c '
+              pkg update -y
+              pkg install -y clang make
+
+              make -C src/cpp
+            '
+
+      - name: Package release
+        run: |
+          mkdir -p release
+
+          cp termux-daemon release/
+          cp src/cpp/android-daemon release/
+          cp termux-daemon.apk release/
+
+          tar -czvf \
+            termux-daemon-${{ github.ref_name }}.tar.gz \
+            release
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            termux-daemon-${{ github.ref_name }}.tar.gz
