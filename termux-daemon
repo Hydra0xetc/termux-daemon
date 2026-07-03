@@ -4,6 +4,6 @@ HERE="$(dirname "$(readlink -f "$0")")"
 
 export PATH=/system/bin
 export CLASSPATH="$HERE/termux-daemon.apk"
+export PACKAGE_NAME=org.termux.daemon
 
-exec app_process64 -Xnoimage-dex2oat / \
-  $(echo "$PACKAGE_NAME" | tr / .).Main "$@"
+exec app_process64 -Xnoimage-dex2oat / $PACKAGE_NAME.Main "$@"
