@@ -66,7 +66,7 @@ public final class ClipboardModule {
         data.getItemAt(0).getText();
 
       return text != null
-        ? text.toString()
+        ? text.toString() + "\n"
         : "";
 
     } catch (Exception e) {
@@ -75,7 +75,6 @@ public final class ClipboardModule {
     }
 
   }
-
 
   public static void set(String text) {
     try {
