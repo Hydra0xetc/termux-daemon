@@ -1,0 +1,5 @@
+lib/
+build/
+src/cpp/android-daemon
+*.apk
+*.jar

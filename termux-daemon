@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+HERE="$(dirname "$(readlink -f "$0")")"
+
+source $HERE/config.sh
+
+export PATH=/system/bin
+export CLASSPATH="$HERE/$OUTPUT_APK"
+
+exec app_process64 -Xnoimage-dex2oat / \
+  $(echo "$PACKAGE_NAME" | tr / .).Main "$@"
