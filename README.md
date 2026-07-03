@@ -80,3 +80,6 @@ real    0m2.003s
 user    0m0.840s
 sys     0m0.340s
 ```
+
+# License
+[MIT](./LICENSE)
