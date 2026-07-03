@@ -65,7 +65,7 @@ jobs:
 
       - name: Package release
         run: |
-          export RELEASE_NAME=${{ github.ref_name }}
+          export RELEASE_NAME="termux-daemon-${{ github.ref_name }}"
           mkdir -p $RELEASE_NAME
 
           cp termux-daemon $RELEASE_NAME
@@ -73,7 +73,7 @@ jobs:
           cp termux-daemon.apk $RELEASE_NAME
 
           tar -czvf \
-            termux-daemon-$RELEASE_NAME.tar.gz \
+            $RELEASE_NAME.tar.gz \
             "$RELEASE_NAME"
 
       - name: Create GitHub Release
