@@ -11,10 +11,10 @@ public final class ClipboardModule {
   private static Class<?> stubClass;
   private static Method asInterface;
   private static Object clipboard;
-  private static boolean initialized = false;
+  private static boolean isPrepared = false;
 
-  private static synchronized void init() {
-    if (initialized) {
+  private static synchronized void prepare() {
+    if (isPrepared) {
       return;
     }
 
@@ -34,7 +34,7 @@ public final class ClipboardModule {
         ServiceManager.getService("clipboard")
       );
 
-      initialized = true;
+      isPrepared = true;
 
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -44,7 +44,7 @@ public final class ClipboardModule {
   public static String get() {
     try {
 
-      init();
+      prepare();
 
       Method getPrimaryClip = clipboard.getClass().getMethod(
         "getPrimaryClip",
@@ -78,7 +78,7 @@ public final class ClipboardModule {
 
   public static void set(String text) {
     try {
-      init();
+      prepare();
 
       Method setPrimaryClip = clipboard.getClass().getMethod(
         "setPrimaryClip",

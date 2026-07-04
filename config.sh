@@ -1,7 +1,7 @@
 # Change this to your own configuration
 
 DEBUG=false
-MINIFIED=false
+MINIFIED=true
 ANDROID_API=29
 ANDROID_DIR=lib/android-$ANDROID_API
 ANDROID=$ANDROID_DIR/android.jar

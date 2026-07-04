@@ -16,7 +16,20 @@ static void usage(const char *name) {
   fprintf(stderr, "  %s get\n", name);
   fprintf(stderr, "  %s set [text]\n", name);
   fprintf(stderr, "  %s open [path] [mimi]\n", name);
+  fprintf(stderr, "  %s music [path]\n", name);
   exit(1);
+}
+
+static inline char *__get_fullpath(char *path) {
+  char *fullpath = malloc(PATH_MAX);
+
+  if (realpath(path, fullpath) == NULL) {
+    fprintf(stderr, "failed to get path '%s': %s\n", path,
+        strerror(errno));
+    exit(1);
+  }
+
+  return fullpath;
 }
 
 static int connect_server(void) {
@@ -94,16 +107,9 @@ static void do_open(int argc, char **argv) {
     exit(1);
   }
 
-  char fullpath[PATH_MAX];
-
-  if (realpath(argv[2], fullpath) == NULL) {
-    fprintf(stderr, "failed to get path '%s': %s\n", argv[2],
-        strerror(errno));
-    exit(1);
-  }
-
   int sock = connect_server();
 
+  char *fullpath = __get_fullpath(argv[2]);
   dprintf(sock, "open\n%s\n", fullpath);
 
   shutdown(sock, SHUT_WR);
@@ -115,6 +121,29 @@ static void do_open(int argc, char **argv) {
     write(STDOUT_FILENO, buf, n);
   }
 
+  free(fullpath);
+  close(sock);
+}
+
+static void do_music(int argc, char **argv) {
+  if (argc != 3) {
+    fprintf(stderr, "usage: %s music <path>\n", argv[0]);
+    exit(1);
+  }
+
+  int sock = connect_server();
+  char *fullpath = __get_fullpath(argv[2]);
+
+  dprintf(sock, "music\n%s\n", fullpath);
+
+  char buf[1024];
+  ssize_t n;
+
+  while ((n = read(sock, buf, sizeof(buf))) > 0) {
+    write(STDOUT_FILENO, buf, n);
+  }
+
+  free(fullpath);
   close(sock);
 }
 
@@ -130,6 +159,8 @@ int main(int argc, char **argv) {
     do_set(argc, argv);
   } else if (strcmp(argv[1], "open") == 0) {
     do_open(argc, argv);
+  } else if (strcmp(argv[1], "music") == 0) {
+    do_music(argc, argv);
   } else {
     usage(program_name);
   }

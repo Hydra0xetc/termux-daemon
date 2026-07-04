@@ -117,6 +117,30 @@ public class ApiServer {
           }
         }
 
+        case "music" -> {
+          String path = in.readLine();
+
+          if (path == null || path.isBlank()) {
+            out.println("ERROR: missing path");
+            break;
+          }
+
+          try {
+            MusicPlayerModule.play(path, socket);
+
+            if (Config.LOG_LEVEL == INFO) {
+              System.out.printf(
+                "[SERVER] music: '%s' from: %s%n",
+                path,
+                client
+              );
+            }
+
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }
+
         default ->
           out.println("ERROR: unknown command: " + cmd);
       }

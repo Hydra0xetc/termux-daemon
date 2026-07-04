@@ -9,7 +9,7 @@ external applications.
 # assume you already build this project
 ./termux-daemon
 # then open a new terminal, and run
-./src/cpp/android-daemon [get|set|open]
+./src/cpp/android-daemon [get|set|open|music]
 ```
 or you can put this command to your bashrc to automatically start
 the server in the background
