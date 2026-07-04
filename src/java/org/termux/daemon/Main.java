@@ -48,15 +48,20 @@ public class Main {
     }
 
     ArgsParse<Integer> port
-      = new ArgsParse<>("--port", 6969, "listening port");
+      = new ArgsParse<>("--port", Config.PORT, "listening port");
     ArgsParse<Boolean> help
       = new ArgsParse<>("--help", false, "print this help message");
+
+    ArgsParse<String> version
+      = new ArgsParse<>("--version", Config.VERSION, "show version");
     argsParse.add(port);
     argsParse.add(help);
+    argsParse.add(version);
 
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals(help.flag)) {
-        help.set(true);
+        printHelp(Config.PROGRAM_NAME, argsParse);
+        System.exit(0);
       }
 
       if (args[i].equals(port.flag)) {
@@ -67,13 +72,15 @@ public class Main {
 
         port.set(Integer.valueOf(args[i + 1]));
       }
+
+      if (args[i].equals(version.flag)) {
+        System.out.println(version.value);
+        System.exit(0);
+      }
+
     }
 
     ApiServer.start(port.value);
-
-    if (help.value) {
-      printHelp(Config.PROGRAM_NAME, argsParse);
-    }
 
   }
 }
