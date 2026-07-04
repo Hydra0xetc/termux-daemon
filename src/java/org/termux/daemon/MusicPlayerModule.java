@@ -45,7 +45,8 @@ public class MusicPlayerModule {
           try {
             int r = socket.getInputStream().read();
             if (r == -1) handler.post(() -> {
-              mp.stop(); myLooper.quitSafely();
+              mp.stop();
+              myLooper.quitSafely();
             });
           } catch (IOException e) {
             handler.post(myLooper::quitSafely);
