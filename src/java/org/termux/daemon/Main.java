@@ -3,14 +3,16 @@ package org.termux.daemon;
 import android.os.Looper;
 import java.util.ArrayList;
 
-class ArgsParse<T> {
+class Arg<T> {
   public final String flag;
   public final String description;
   public final T defaultValue;
 
   public T value;
 
-  public ArgsParse(
+  public static ArrayList<Arg> allArgs = new ArrayList<>();
+
+  public Arg(
       String flag,
       T defaultValue,
       String description
@@ -19,6 +21,8 @@ class ArgsParse<T> {
     this.defaultValue = defaultValue;
     this.value = defaultValue;
     this.description = description;
+
+    allArgs.add(this);
   }
 
   public void set(T value) {
@@ -28,16 +32,13 @@ class ArgsParse<T> {
 }
 
 public class Main {
-  private static int port = 6969;
-  private static ArrayList<ArgsParse> argsParse = new ArrayList<>();
-
   private static void printHelp(String programName,
-      ArrayList<ArgsParse> argsParse) {
+      ArrayList<Arg> argsParse) {
 
     System.out.println("Usage: " + programName + " [OPTIONS]");
-    for (ArgsParse f : argsParse) {
-      System.out.println("    " + f.flag);
-      System.out.println("        " + f.description);
+    for (Arg a : argsParse) {
+      System.out.println("    " + a.flag);
+      System.out.println("        " + a.description);
     }
 
   }
@@ -47,20 +48,16 @@ public class Main {
       Looper.prepare();
     }
 
-    ArgsParse<Integer> port
-      = new ArgsParse<>("--port", Config.PORT, "listening port");
-    ArgsParse<Boolean> help
-      = new ArgsParse<>("--help", false, "print this help message");
-
-    ArgsParse<String> version
-      = new ArgsParse<>("--version", Config.VERSION, "show version");
-    argsParse.add(port);
-    argsParse.add(help);
-    argsParse.add(version);
+    Arg<Integer> port
+      = new Arg<>("--port", Config.PORT, "listening port");
+    Arg<Boolean> help
+      = new Arg<>("--help", false, "print this help message");
+    Arg<String> version
+      = new Arg<>("--version", Config.VERSION, "show version");
 
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals(help.flag)) {
-        printHelp(Config.PROGRAM_NAME, argsParse);
+        printHelp(Config.PROGRAM_NAME, Arg.allArgs);
         System.exit(0);
       }
 
