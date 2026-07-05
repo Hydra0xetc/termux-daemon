@@ -1,4 +1,4 @@
-package org.termux.daemon;
+package org.termux.daemon.module;
 
 import android.media.MediaPlayer;
 import android.os.Looper;
@@ -9,7 +9,7 @@ import java.net.Socket;
 
 import java.io.IOException;
 
-public class MusicPlayerModule {
+public class MusicPlayer {
   private static MediaPlayer mp;
   private static Looper looper;
 

@@ -47,17 +47,18 @@ find src/java -name '*.aidl' | while read -r file; do
 done
 
 echo "[*] Compiling to class"
-find src/java -name '*.java' > sources.txt
+find src/java -name '*.java' > "$BUILD/sources.txt"
 javac \
     -cp "$ANDROID" \
     -d "$BUILD" \
     --release 17 \
-    @sources.txt
+    "@$BUILD/sources.txt"
 
-rm sources.txt
+rm $BUILD/sources.txt
 
 if [[ $MINIFIED == true ]]; then
     echo "[*] Compiling to dex (minify)"
+
     PG_CONF=""
     if [[ -f "$RULES" ]]; then
         PG_CONF="--pg-conf $RULES"
@@ -65,15 +66,19 @@ if [[ $MINIFIED == true ]]; then
         echo "[!] Minify dex need $RULES file"
         exit 1
     fi
-    $R8 --release \
-        --lib "$ANDROID" \
-        --output . \
-        $PG_CONF \
-        "$BUILD/$PACKAGE_NAME"/*.class
+
+    find "$BUILD/$PACKAGE_NAME" -name '*.class' -print0 |
+        xargs -0 "$R8" \
+            --release \
+            --lib "$ANDROID" \
+            --output . \
+            $PG_CONF
 else
     echo "[*] Compiling to dex (no minify)"
-    bash "$D8" "$BUILD"/"$PACKAGE_NAME"/*.class \
-         --lib "$ANDROID"
+
+    find "$BUILD/$PACKAGE_NAME" -name '*.class' -print0 |
+        xargs -0 "$D8" \
+            --lib "$ANDROID"
 fi
 
 echo "[*] Packaging dex into apk"

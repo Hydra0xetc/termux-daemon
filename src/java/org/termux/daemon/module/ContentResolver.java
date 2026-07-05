@@ -1,4 +1,4 @@
-package org.termux.daemon;
+package org.termux.daemon.module;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -10,7 +10,7 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.util.Locale;
 
-public class ContentResolverModule {
+public class ContentResolver {
 
   private static Object sAmService;
   private static Method sStartActivityMethod;

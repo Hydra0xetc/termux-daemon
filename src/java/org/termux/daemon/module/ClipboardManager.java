@@ -1,12 +1,13 @@
-package org.termux.daemon;
+package org.termux.daemon.module;
 
+import org.termux.daemon.FakeContext;
 import android.content.ClipData;
 
 import android.os.ServiceManager;
 
 import java.lang.reflect.Method;
 
-public final class ClipboardModule {
+public final class ClipboardManager {
   private static FakeContext fakeCtx;
   private static Class<?> stubClass;
   private static Method asInterface;
@@ -66,7 +67,7 @@ public final class ClipboardModule {
         data.getItemAt(0).getText();
 
       return text != null
-        ? text.toString() + "\n"
+        ? text.toString()
         : "";
 
     } catch (Exception e) {
