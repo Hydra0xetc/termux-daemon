@@ -3,3 +3,10 @@
 }
 
 -dontwarn android.os.ServiceManager
+
+############################################
+## Delete debug logging
+############################################
+-assumenosideeffects class org.termux.daemon.Logger {
+    public void d(...);
+}

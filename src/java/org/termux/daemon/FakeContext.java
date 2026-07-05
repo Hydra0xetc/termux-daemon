@@ -8,8 +8,6 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
-import static org.termux.daemon.Logger.LogLevel.*;
-
 public class FakeContext extends ContextWrapper {
 
     private static final String FAKE_PACKAGE = "com.termux";
@@ -75,7 +73,7 @@ public class FakeContext extends ContextWrapper {
 
     @Override
     public Object getSystemService(String name) {
-        logger.log(DEBUG, "FakeContext", "getSystemService: " + name);
+        logger.d("FakeContext", "getSystemService: " + name);
         return base.getSystemService(name);
     }
 
