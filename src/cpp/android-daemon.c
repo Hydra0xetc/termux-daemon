@@ -156,8 +156,10 @@ static void clipboard_set(int argc, char **argv) {
 // NOTE: for simplicity, explicitly stating the mime type is
 // not or has not been implemented
 static void do_open(int argc, char **argv) {
+  unused(argv);
+
   if (argc != 3) {
-    fprintf(stderr, "usage: %s open <path>\n", argv[0]);
+    fprintf(stderr, "usage: open <path>\n");
     exit(1);
   }
 
