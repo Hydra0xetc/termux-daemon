@@ -4,6 +4,7 @@ import org.termux.daemon.FakeContext;
 import android.content.ClipData;
 
 import android.os.ServiceManager;
+import android.os.Looper;
 
 import java.lang.reflect.Method;
 
@@ -15,18 +16,17 @@ public final class ClipboardManager {
   private static boolean isPrepared = false;
 
   private static synchronized void prepare() {
+    if (Looper.getMainLooper() == null) {
+      Looper.prepare();
+    }
+
     if (isPrepared) {
       return;
     }
 
     try {
-      fakeCtx = new FakeContext(
-        FakeContext.getSystemContext()
-      );
-
-      stubClass =
-        Class.forName("android.content.IClipboard$Stub");
-
+      fakeCtx = new FakeContext(FakeContext.getSystemContext());
+      stubClass = Class.forName("android.content.IClipboard$Stub");
       asInterface =
         stubClass.getMethod("asInterface", android.os.IBinder.class);
 
@@ -88,8 +88,7 @@ public final class ClipboardManager {
         int.class
       );
 
-      ClipData clip =
-        ClipData.newPlainText("label", text);
+      ClipData clip = ClipData.newPlainText("label", text);
 
       setPrimaryClip.invoke(
         clipboard,

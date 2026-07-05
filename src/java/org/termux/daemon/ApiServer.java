@@ -16,6 +16,35 @@ import org.termux.daemon.module.MusicPlayer;
 
 import static org.termux.daemon.Logger.LogLevel.INFO;
 
+enum Service {
+  CLIPBOARD("clipboard"),
+  OPEN("open"),
+  MUSIC("music");
+
+  private final String key;
+
+  Service(String key) {
+    this.key = key;
+  }
+
+  public String getKey() {
+    return key;
+  }
+
+  public static Service fromKey(String key) {
+    for (Service service : values()) {
+      if (service.getKey().equals(key)) {
+        return service;
+      }
+    }
+
+    throw new IllegalArgumentException(
+      "Unknown service: " + key
+    );
+  }
+
+}
+
 public class ApiServer {
   private static final Logger logger = Logger.getInstance();
 
@@ -29,7 +58,7 @@ public class ApiServer {
 
       while (true) {
         Socket client = server.accept();
-        handle(client);
+        new Thread(() -> handle(client)).start();
       }
   }
 
@@ -70,87 +99,109 @@ public class ApiServer {
         .getHostAddress()
         + ":" + socket.getPort();
 
-      String cmd = readLine(in);
+      String line = readLine(in);
 
-      if (cmd == null) {
+      if (line == null) {
         return;
       }
 
-      switch (cmd) {
+      String[] parts =
+        line.trim().split("\\s+", 2);
 
-        case "get" -> {
-          long t0 = System.nanoTime();
-          String content = ClipboardManager.get();
-          long t1 = System.nanoTime();
+      String cmd = parts[0];
+      String action =
+        parts.length > 1 ? parts[1] : "";
 
-          if (Config.LOG_LEVEL == INFO) {
-            System.out.printf(
-              "get=%.3f ms%n",
-              (t1 - t0) / 1e6
-            );
+      Service service =
+        Service.fromKey(cmd);
 
-            System.out.printf(
-              "[SERVER] get: '%s' from: %s%n",
-              content,
-              client
-            );
+      switch (service) {
+
+        case CLIPBOARD -> {
+
+          switch (action) {
+
+            case "get" -> {
+
+              long t0 = System.nanoTime();
+              String content = ClipboardManager.get();
+              long t1 = System.nanoTime();
+
+              if (Config.LOG_LEVEL == INFO) {
+                System.out.printf(
+                  "get=%.3f ms%n",
+                  (t1 - t0) / 1e6
+                );
+
+                System.out.printf(
+                  "[SERVER] get: '%s' from: %s%n",
+                  content,
+                  client
+                );
+              }
+
+              outRaw.write(
+                content.getBytes(StandardCharsets.UTF_8)
+              );
+
+              outRaw.flush();
+            }
+
+            case "set" -> {
+
+              long t0 = System.nanoTime();
+
+              ByteArrayOutputStream buf =
+                new ByteArrayOutputStream();
+
+              byte[] tmp = new byte[4096];
+              int n;
+
+              while ((n = in.read(tmp)) != -1) {
+                buf.write(tmp, 0, n);
+              }
+
+              String content =
+                new String(
+                  buf.toByteArray(),
+                  StandardCharsets.UTF_8
+                );
+
+              long t1 = System.nanoTime();
+              ClipboardManager.set(content);
+              long t2 = System.nanoTime();
+
+              if (Config.LOG_LEVEL == INFO) {
+                System.out.printf(
+                  "[SERVER] set: '%s' from: %s%n",
+                  content,
+                  client
+                );
+
+                System.out.printf(
+                  "read=%.3f ms, set=%.3f ms%n",
+                  (t1 - t0) / 1e6,
+                  (t2 - t1) / 1e6
+                );
+              }
+            }
+
+            default ->
+              out.println(
+                "ERROR: clipboard [set|get]"
+              );
           }
-
-          outRaw.write(
-            content.getBytes(StandardCharsets.UTF_8)
-          );
-
-          outRaw.flush();
         }
 
-        case "set" -> {
-          long t0 = System.nanoTime();
-
-          ByteArrayOutputStream buf =
-            new ByteArrayOutputStream();
-
-          byte[] tmp =
-            new byte[4096];
-
-          int n;
-
-          while ((n = in.read(tmp)) != -1) {
-            buf.write(tmp, 0, n);
-          }
-
-          String content
-            = new String(
-              buf.toByteArray(), StandardCharsets.UTF_8
-            );
-
-          long t1 = System.nanoTime();
-          ClipboardManager.set(content);
-          long t2 = System.nanoTime();
-
-          if (Config.LOG_LEVEL == INFO) {
-            System.out.printf(
-              "[SERVER] set: '%s' from: %s%n",
-              content,
-              client
-            );
-
-            System.out.printf(
-              "read=%.3f ms, set=%.3f ms%n",
-              (t1 - t0) / 1e6,
-              (t2 - t1) / 1e6
-            );
-          }
-        }
-
-        case "open" -> {
+        case OPEN -> {
           String path = readLine(in);
 
           if (path == null || path.isBlank()) {
-            out.println( "ERROR: missing path");
+            out.println("ERROR: missing path");
             break;
           }
 
-        try {
+          try {
             ContentResolver.open(path, null);
 
             if (Config.LOG_LEVEL == INFO) {
@@ -166,7 +217,27 @@ public class ApiServer {
           }
         }
 
-        case "music" -> {
+        case MUSIC -> {
+
+          if (action.equals("stop")) {
+
+            MusicPlayer.stop();
+
+            if (Config.LOG_LEVEL == INFO) {
+              System.out.printf(
+                "[SERVER] music stop from: %s%n",
+                client
+              );
+            }
+
+            break;
+          }
+
+          if (!action.equals("play")) {
+            out.println("ERROR: music [play|stop]");
+            break;
+          }
+
           String path = readLine(in);
 
           if (path == null || path.isBlank()) {
@@ -175,7 +246,7 @@ public class ApiServer {
           }
 
           try {
-            MusicPlayer.play(path, socket);
+            MusicPlayer.play(path);
 
             if (Config.LOG_LEVEL == INFO) {
               System.out.printf(
@@ -189,8 +260,6 @@ public class ApiServer {
             e.printStackTrace();
           }
         }
-
-        default -> out.println("ERROR: unknown command: " + cmd);
       }
 
     } catch (Exception e) {

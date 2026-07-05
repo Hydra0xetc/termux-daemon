@@ -7,16 +7,66 @@
 #include <libgen.h>
 #include <limits.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #define HOST "127.0.0.1"
 #define PORT 6969
 
-static void usage(const char *name) {
+#define unused(s) (void)s
+
+typedef void (*CommandHandler)(int argc, char **argv);
+
+typedef struct {
+  const char *name;
+  CommandHandler handler;
+} SubCommand;
+
+typedef struct {
+  const char *name;
+  const SubCommand *subcmd;
+  size_t count;
+} Command;
+
+static const Command *find_cmd(const Command *cmds, size_t count,
+    const char *name) {
+  for (size_t i = 0; i < count; i++) {
+    if (strcmp(cmds[i].name, name) == 0) {
+      return &cmds[i];
+    }
+  }
+
+  return NULL;
+}
+
+static const SubCommand *find_subcmd(const Command *cmd,
+    const char *name) {
+  for (size_t i = 0; i < cmd->count; i++) {
+    if (strcmp(cmd->subcmd[i].name, name) == 0) {
+      return &cmd->subcmd[i];
+    }
+  }
+
+  return NULL;
+}
+
+static void usage(const char *name, const Command *cmds,
+    size_t count) {
   fprintf(stderr, "usage:\n");
-  fprintf(stderr, "  %s get\n", name);
-  fprintf(stderr, "  %s set [text]\n", name);
-  fprintf(stderr, "  %s open [path] [mimi]\n", name);
-  fprintf(stderr, "  %s music [path]\n", name);
+  fprintf(stderr, "  %s open <path>\n", name);
+
+  for (size_t i = 0; i < count; i++) {
+    fprintf(stderr, "  %s %s [", name, cmds[i].name);
+
+    for (size_t j = 0; j < cmds[i].count; j++) {
+      fprintf(stderr, "%s", cmds[i].subcmd[j].name);
+      if (j + 1 < cmds[i].count) {
+        fputc('|', stderr);
+      }
+    }
+
+    fprintf(stderr, "]\n");
+  }
+
   exit(1);
 }
 
@@ -58,10 +108,13 @@ static int connect_server(void) {
   return sock;
 }
 
-static void do_get(void) {
+static void clipboard_get(int argc, char **argv) {
+  unused(argc);
+  unused(argv);
+
   int sock = connect_server();
 
-  write(sock, "get\n", 4);
+  write(sock, "clipboard get\n", 14);
 
   char buf[4096];
   ssize_t n;
@@ -70,13 +123,14 @@ static void do_get(void) {
     write(STDOUT_FILENO, buf, n);
   }
 
+  shutdown(sock, SHUT_WR);
   close(sock);
 }
 
-static void do_set(int argc, char **argv) {
+static void clipboard_set(int argc, char **argv) {
   int sock = connect_server();
 
-  write(sock, "set\n", 4);
+  write(sock, "clipboard set\n", 14);
 
   if (argc > 2) {
     for (int i = 2; i < argc; i++) {
@@ -125,45 +179,98 @@ static void do_open(int argc, char **argv) {
   close(sock);
 }
 
-static void do_music(int argc, char **argv) {
+static void music_play(int argc, char **argv) {
   if (argc != 3) {
-    fprintf(stderr, "usage: %s music <path>\n", argv[0]);
+    fprintf(stderr, "usage: music play <path>\n");
     exit(1);
   }
 
   int sock = connect_server();
   char *fullpath = __get_fullpath(argv[2]);
 
-  dprintf(sock, "music\n%s\n", fullpath);
+  dprintf(sock, "music play\n%s\n", fullpath);
 
-  char buf[1024];
-  ssize_t n;
-
-  while ((n = read(sock, buf, sizeof(buf))) > 0) {
-    write(STDOUT_FILENO, buf, n);
-  }
+  shutdown(sock, SHUT_WR);
 
   free(fullpath);
   close(sock);
 }
 
-int main(int argc, char **argv) {
-  const char *program_name = basename(argv[0]);
-  if (argc < 2) {
-    usage(program_name);
+static void music_stop(int argc, char **argv) {
+  unused(argv);
+  if (argc != 2) {
+    fprintf(stderr, "usage: music stop\n");
+    exit(1);
   }
 
-  if (strcmp(argv[1], "get") == 0) {
-    do_get();
-  } else if (strcmp(argv[1], "set") == 0) {
-    do_set(argc, argv);
-  } else if (strcmp(argv[1], "open") == 0) {
-    do_open(argc, argv);
-  } else if (strcmp(argv[1], "music") == 0) {
-    do_music(argc, argv);
-  } else {
-    usage(program_name);
+  int sock = connect_server();
+
+  dprintf(sock, "music stop\n");
+  shutdown(sock, SHUT_WR);
+  close(sock);
+}
+
+int main(int argc, char **argv) {
+
+  static const SubCommand clipboard_subs[] = {
+    { "get", clipboard_get },
+    { "set", clipboard_set },
+  };
+
+  static const SubCommand music_subs[] = {
+    { "play", music_play },
+    { "stop", music_stop },
+  };
+
+  static const Command commands[] = {
+    {
+      .name = "clipboard",
+      .subcmd = clipboard_subs,
+      .count = 2,
+    },
+    {
+      .name = "music",
+      .subcmd = music_subs,
+      .count = 2,
+    }
+  };
+
+  size_t commands_len = sizeof(commands) / sizeof(commands[0]);
+
+  const char *program_name = basename(argv[0]);
+
+  if (argc < 2) {
+    usage(program_name, commands, commands_len);
   }
+
+  // NOTE: I'm not sure what service this thing is categorized as,
+  // so for now I'll just separate it.
+  if (strcmp(argv[1], "open") == 0) {
+    do_open(argc, argv);
+    return 0;
+  }
+
+  if (argc < 3) {
+    usage(program_name, commands, commands_len);
+  }
+
+  const Command *cmd = find_cmd(
+        commands,
+        commands_len,
+        argv[1]
+        );
+
+  if (cmd == NULL) {
+    usage(program_name, commands, commands_len);
+  }
+
+  const SubCommand *sub = find_subcmd(cmd, argv[2]);
+
+  if (sub == NULL) {
+    usage(program_name, commands, commands_len);
+  }
+
+  sub->handler(argc - 1, argv + 1);
 
   return 0;
 }

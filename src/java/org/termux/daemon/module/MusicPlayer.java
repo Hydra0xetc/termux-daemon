@@ -2,10 +2,6 @@ package org.termux.daemon.module;
 
 import android.media.MediaPlayer;
 import android.os.Looper;
-import android.os.Handler;
-
-import java.util.concurrent.CountDownLatch;
-import java.net.Socket;
 
 import java.io.IOException;
 
@@ -59,63 +55,57 @@ public class MusicPlayer {
     }
   }
 
-  public static void play(String fullpath, Socket socket)
-      throws IOException, InterruptedException {
-    CountDownLatch done = new CountDownLatch(1);
-
-    Thread playerThread = new Thread(() -> {
+  public static void play(String fullpath) throws IOException {
+    if (Looper.getMainLooper() == null) {
       Looper.prepare();
-      Looper myLooper = Looper.myLooper();
-      MediaPlayer mp = new MediaPlayer();
-      Handler handler = new Handler(myLooper);
+    }
 
-      try {
-        mp.setDataSource(fullpath);
+    prepare();
 
-        logger.d(TAG, "Setting up: " + fullpath);
+    try {
+      mp.setDataSource(fullpath);
 
-        mp.setOnPreparedListener((player) -> {
-          mp.start();
-        });
+      logger.d(TAG, "Setting up: " + fullpath);
 
-        mp.setOnErrorListener((player, what, extra) -> {
-          myLooper.quitSafely();
+      mp.setOnPreparedListener((player) -> {
+        mp.start();
+      });
 
-          logger.d(TAG, "what = " + mediaStrError(what));
-          return true;
-        });
+      mp.setOnErrorListener((player, what, extra) -> {
+        MusicPlayer.stop();
+        logger.i(TAG, "what = " + mediaStrError(what));
+        return true;
+      });
 
-        mp.setOnCompletionListener(player -> myLooper.quitSafely());
+      mp.setOnCompletionListener(player -> {
+        MusicPlayer.stop();
+      });
 
-        Thread watcher = new Thread(() -> {
-          try {
-            int r = socket.getInputStream().read();
-            if (r == -1) handler.post(() -> {
-              mp.stop();
-              myLooper.quitSafely();
-            });
-          } catch (IOException e) {
-            handler.post(myLooper::quitSafely);
-          }
-        });
+      mp.prepareAsync();
+      looper.loop();
 
-        watcher.setDaemon(true);
-        watcher.start();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
 
-        mp.prepareAsync();
+  public static synchronized void stop() {
+    if (mp == null) {
+      return;
+    }
 
-        myLooper.loop();
-        watcher.interrupt();
-      } catch (IOException e) {
-        e.printStackTrace();
-      } finally {
-        logger.d(TAG, "releasing the player");
-        mp.release();
-        done.countDown();
-      }
-    });
+    if (mp.isPlaying()) {
+      mp.stop();
+    }
 
-    playerThread.start();
-    done.await();
+    mp.release();
+    mp = null;
+
+    if (looper != null) {
+      looper.quitSafely();
+      looper = null;
+    }
+
+    logger.d(TAG, "music released");
   }
 }
