@@ -5,34 +5,51 @@ Termux services such as clipboard management and opening files with
 external applications.
 
 ## Usage
-```sh
-# assume you already build this project
-./termux-daemon
-# then open a new terminal, and run
-./src/cpp/android-daemon [get|set|open]
-```
-or you can put this command to your bashrc to automatically start
-the server in the background
+You can add this command to your bashrc to automatically start
+the server in the background:
 ```bash
 start_clipboard_daemon() {
   local PORT=6969
   local LOG="$PREFIX/var/log/termux-daemon.log"
 
-  # check if the port already used
+  # check if the port is already in use
   nc -z 127.0.0.1 "$PORT" 2>/dev/null &&
     return
 
-  "$PATH_TO_THIS_PROJECT/termux-daemon" \
-    --port "$PORT" \
-    &>>"$LOG" 2>&1 &
+  termux-daemon --port "$PORT" &>>"$LOG" 2>&1 &
 }
 
 start_clipboard_daemon
 ```
+Once the server is running, you can call `android-daemon` with a service
+and its subcommand. For example, to get the current system clipboard
+content, run:
+```sh
+android-daemon clipboard get
+```
+Here, `clipboard` is the service and `get` is the subcommand.
+Below is the list of available services:
+```
+$ android-daemon
+usage:
+  android-daemon clipboard [get|set]
+  android-daemon music [play|stop|resume|pause]
+  android-daemon open [file|url]
+```
+
+## Idea
+I noticed that Termux scripts always run through the `am` command, so I
+looked into it a bit and found that it's actually android JVM (`app_process` or
+`dalvikvm`) with a full initialization. This means Termux services are slow
+simply because they initialize the Android JVM, which is heavy, and then let
+it die right after each call. So the question became: what if we initialize
+the Android JVM once and keep it alive instead? That's exactly what this project
+does — it initializes the Android JVM (via `app_process`) a single time and
+keeps it running.
 
 ## Comparison
 
-### my clipboard manager
+### My clipboard manager
 
 ```console
 $ time android-daemon set $(cat src/java/org/clipboard/ClipboardModule.java)
@@ -46,7 +63,7 @@ real	0m0.040s
 user	0m0.020s
 sys	0m0.000s
 ```
-### termux clipboard manager
+### Termux clipboard manager
 ```console
 $ time termux-clipboard-set $(cat src/java/org/clipboard/ClipboardModule.java)
 
@@ -60,10 +77,10 @@ user	0m0.010s
 sys	0m0.010s
 ```
 
-### my content resolver
+### My content resolver
 
-Cheats a little bit—it's actually still using Termux's provider/resolver.
-but still BLAZINGLY FAST
+Cheats a little bit — it's actually still using Termux's provider/resolver,
+but it's still BLAZINGLY FAST.
 See [ContentResolverModule.java](./src/java/org/termux/daemon/ContentResolverModule.java#L93)
 ```console
 $ time android-daemon open termux-daemon
@@ -72,7 +89,7 @@ real    0m0.047s
 user    0m0.010s
 sys     0m0.000s
 ```
-### termux content resolver
+### Termux content resolver
 ```console
 $ time termux-open termux-daemon
 
@@ -80,6 +97,10 @@ real    0m2.003s
 user    0m0.840s
 sys     0m0.340s
 ```
+
+## Target
+Fully free from dependency on Termux's own services (e.g. `termux-api`),
+so this daemon can work standalone without relying on Termux add-ons.
 
 # License
 [MIT](./LICENSE)
