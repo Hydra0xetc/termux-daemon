@@ -52,8 +52,6 @@ static const SubCommand *find_subcmd(const Command *cmd,
 static void usage(const char *name, const Command *cmds,
     size_t count) {
   fprintf(stderr, "usage:\n");
-  fprintf(stderr, "  %s open <path>\n", name);
-
   for (size_t i = 0; i < count; i++) {
     fprintf(stderr, "  %s %s [", name, cmds[i].name);
 

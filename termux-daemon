@@ -6,4 +6,5 @@ export PATH=/system/bin
 export CLASSPATH="$HERE/termux-daemon.apk"
 export PACKAGE_NAME=org.termux.daemon
 
-exec app_process64 -Xnoimage-dex2oat / $PACKAGE_NAME.Main "$@"
+# 10 mb might be enough?
+exec app_process64 -Xmx10m -Xnoimage-dex2oat / $PACKAGE_NAME.Main "$@"
