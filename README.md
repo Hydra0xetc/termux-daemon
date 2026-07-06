@@ -52,12 +52,12 @@ keeps it running.
 ### My clipboard manager
 
 ```console
-$ time android-daemon set $(cat src/java/org/clipboard/ClipboardModule.java)
+$ time android-daemon clipboard set $(cat src/java/org/clipboard/ClipboardModule.java)
 
 real	0m0.060s
 user	0m0.040s
 sys	0m0.000s
-$ time android-daemon get >/dev/null
+$ time android-daemon clipboard get >/dev/null
 
 real	0m0.040s
 user	0m0.020s
@@ -83,7 +83,7 @@ Cheats a little bit — it's actually still using Termux's provider/resolver,
 but it's still BLAZINGLY FAST.
 See [ContentResolverModule.java](./src/java/org/termux/daemon/ContentResolverModule.java#L93)
 ```console
-$ time android-daemon open termux-daemon
+$ time android-daemon open file termux-daemon
 
 real    0m0.047s
 user    0m0.010s
