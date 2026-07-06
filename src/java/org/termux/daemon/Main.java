@@ -43,6 +43,12 @@ public class Main {
 
   }
 
+  private static String getVer() {
+    return System.getenv("PROGRAM_VER") != null
+      ? System.getenv("PROGRAM_VER")
+      : "Unknow";
+  }
+
   public static void main(String[] args) throws Exception {
     if (Looper.getMainLooper() == null) {
       Looper.prepare();
@@ -53,7 +59,7 @@ public class Main {
     Arg<Boolean> help
       = new Arg<>("--help", false, "print this help message");
     Arg<String> version
-      = new Arg<>("--version", Config.VERSION, "show version");
+      = new Arg<>("--version", getVer(), "show version");
 
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals(help.flag)) {

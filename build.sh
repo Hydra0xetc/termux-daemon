@@ -107,6 +107,7 @@ __create_script_runner ()
 
 HERE="\$(dirname "\$(readlink -f "\$0")")"
 
+export PROGRAM_VER="$VERSION"
 export PATH=/system/bin/
 # TODO: Handle symlinked bin directories.
 # NOTE: If the bin directory is a symlink, "../share"

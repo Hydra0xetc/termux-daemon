@@ -1,7 +1,8 @@
 # Change this to your own configuration
 
+VERSION=v1.0.3
 DEBUG=false
-BUILD_TYPE=release
+BUILD_TYPE=debug
 BUILD_TOOLS_VER=35.0.0
 CMAKE_VERSION=4.3.4
 ANDROID_API=29
