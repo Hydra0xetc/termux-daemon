@@ -155,18 +155,18 @@ static void clipboard_set(int argc, char **argv) {
 
 // NOTE: for simplicity, explicitly stating the mime type is
 // not or has not been implemented
-static void do_open(int argc, char **argv) {
+static void open_file(int argc, char **argv) {
   unused(argv);
 
   if (argc != 3) {
-    fprintf(stderr, "usage: open <path>\n");
+    fprintf(stderr, "usage: open file <path>\n");
     exit(1);
   }
 
   int sock = connect_server();
 
   char *fullpath = __get_fullpath(argv[2]);
-  dprintf(sock, "open\n%s\n", fullpath);
+  dprintf(sock, "open file\n%s\n", fullpath);
 
   shutdown(sock, SHUT_WR);
 
@@ -178,6 +178,29 @@ static void do_open(int argc, char **argv) {
   }
 
   free(fullpath);
+  close(sock);
+}
+
+static void open_url(int argc, char **argv) {
+  unused(argv);
+
+  if (argc != 3) {
+    fprintf(stderr, "usage: open url <url>\n");
+    exit(1);
+  }
+
+  int sock = connect_server();
+
+  dprintf(sock, "open url\n%s\n", argv[2]);
+  shutdown(sock, SHUT_WR);
+
+  char buf[1024];
+  ssize_t n;
+
+  while ((n = read(sock, buf, sizeof(buf))) > 0) {
+    write(STDOUT_FILENO, buf, n);
+  }
+
   close(sock);
 }
 
@@ -199,6 +222,7 @@ static void music_play(int argc, char **argv) {
 }
 
 static void music_pause(int argc, char **argv) {
+  unused(argv);
   if (argc != 2) {
     fprintf(stderr, "usage: music pause\n");
     exit(1);
@@ -213,6 +237,7 @@ static void music_pause(int argc, char **argv) {
 }
 
 static void music_resume(int argc, char **argv) {
+  unused(argv);
   if (argc != 2) {
     fprintf(stderr, "usage: music resume\n");
     exit(1);
@@ -252,16 +277,26 @@ int main(int argc, char **argv) {
     { "pause", music_pause },
   };
 
+  static const SubCommand open_subs[] = {
+    { "file", open_file },
+    { "url", open_url },
+  };
+
   static const Command commands[] = {
     {
       .name = "clipboard",
       .subcmd = clipboard_subs,
-      .count = 2,
+      .count = (sizeof clipboard_subs / sizeof clipboard_subs[0]),
     },
     {
       .name = "music",
       .subcmd = music_subs,
-      .count = 4,
+      .count = (sizeof music_subs / sizeof music_subs[0]),
+    },
+    {
+      .name = "open",
+      .subcmd = open_subs,
+      .count = (sizeof open_subs / sizeof open_subs[0])
     }
   };
 
@@ -271,13 +306,6 @@ int main(int argc, char **argv) {
 
   if (argc < 2) {
     usage(program_name, commands, commands_len);
-  }
-
-  // NOTE: I'm not sure what service this thing is categorized as,
-  // so for now I'll just separate it.
-  if (strcmp(argv[1], "open") == 0) {
-    do_open(argc, argv);
-    return 0;
   }
 
   if (argc < 3) {

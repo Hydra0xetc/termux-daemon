@@ -187,33 +187,48 @@ public class ApiServer {
             }
 
             default ->
-              out.println(
-                "ERROR: clipboard [set|get]"
-              );
+              out.println("ERROR: clipboard [set|get]");
           }
         }
 
         case OPEN -> {
-          String path = readLine(in);
 
-          if (path == null || path.isBlank()) {
-            out.println("ERROR: missing path");
-            break;
-          }
+          switch (action) {
+            case "file" -> {
 
-          try {
-            ContentResolver.open(path, null);
+              String path = readLine(in);
 
-            if (Config.LOG_LEVEL == INFO) {
-              System.out.printf(
-                "[SERVER] open: '%s' from: %s%n",
-                path,
-                client
-              );
+              if (path == null || path.isBlank()) {
+                out.println("ERROR: missing path");
+                break;
+              }
+
+              try {
+                ContentResolver.file(path, null);
+
+                if (Config.LOG_LEVEL == INFO) {
+                  System.out.printf(
+                    "[SERVER] open: '%s' from: %s%n",
+                    path,
+                    client
+                  );
+                }
+
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
             }
 
-          } catch (Exception e) {
-            e.printStackTrace();
+            case "url" -> {
+              String url = readLine(in);
+
+              if (url == null || url.isBlank()) {
+                out.println("ERROR: missing url");
+                break;
+              }
+
+              ContentResolver.url(url);
+            }
           }
         }
 

@@ -10,8 +10,12 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.util.Locale;
 
-public class ContentResolver {
+import org.termux.daemon.Logger;
 
+public class ContentResolver {
+  private static String TAG = "ContentResolver";
+
+  private static Logger logger = Logger.getInstance();
   private static Object sAmService;
   private static Method sStartActivityMethod;
   private static Class<?>[] sParamTypes;
@@ -73,12 +77,40 @@ public class ContentResolver {
     sPrepared = true;
   }
 
-  public static boolean open(String path, String mime) {
+  public static  void url(String url) {
+    logger.d(TAG, String.format("url(%s)", url));
+
     try {
       prepare();
     } catch (Exception e) {
       e.printStackTrace();
-      return false;
+    }
+
+    try {
+
+      Intent intent = new Intent(Intent.ACTION_VIEW);
+
+      intent.setData(Uri.parse(url));
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+      Object[] callArgs = buildArgs(intent, null);
+
+      sStartActivityMethod.invoke(
+        sAmService,
+        callArgs
+      );
+
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static void file(String path, String mime) {
+    try {
+      prepare();
+    } catch (Exception e) {
+      e.printStackTrace();
     }
 
     String resolvedMime = mime;
@@ -98,19 +130,15 @@ public class ContentResolver {
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
       intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-      Object[] callArgs =
-        buildArgs(intent, resolvedMime);
+      Object[] callArgs = buildArgs(intent, resolvedMime);
 
       sStartActivityMethod.invoke(
         sAmService,
         callArgs
       );
 
-      return true;
-
     } catch (Throwable t) {
       t.printStackTrace();
-      return false;
     }
   }
 
