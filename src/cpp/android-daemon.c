@@ -198,6 +198,32 @@ static void music_play(int argc, char **argv) {
   close(sock);
 }
 
+static void music_pause(int argc, char **argv) {
+  if (argc != 2) {
+    fprintf(stderr, "usage: music pause\n");
+    exit(1);
+  }
+
+  int sock = connect_server();
+
+  dprintf(sock, "music pause\n");
+  shutdown(sock, SHUT_WR);
+
+  close(sock);
+}
+
+static void music_resume(int argc, char **argv) {
+  if (argc != 2) {
+    fprintf(stderr, "usage: music resume\n");
+    exit(1);
+  }
+
+  int sock = connect_server();
+  dprintf(sock, "music resume\n");
+  shutdown(sock, SHUT_WR);
+  close(sock);
+}
+
 static void music_stop(int argc, char **argv) {
   unused(argv);
   if (argc != 2) {
@@ -222,6 +248,8 @@ int main(int argc, char **argv) {
   static const SubCommand music_subs[] = {
     { "play", music_play },
     { "stop", music_stop },
+    { "resume", music_resume },
+    { "pause", music_pause },
   };
 
   static const Command commands[] = {
@@ -233,7 +261,7 @@ int main(int argc, char **argv) {
     {
       .name = "music",
       .subcmd = music_subs,
-      .count = 2,
+      .count = 4,
     }
   };
 

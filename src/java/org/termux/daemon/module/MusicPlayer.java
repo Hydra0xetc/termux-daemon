@@ -31,25 +31,44 @@ public class MusicPlayer {
 
   private static String mediaStrError(int what) {
     switch (what) {
-      case MediaPlayer.MEDIA_ERROR_IO: return "MEDIA_ERROR_IO";
-      case MediaPlayer.MEDIA_ERROR_MALFORMED: return "MEDIA_ERROR_MALFORMED";
-      case MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK: return "MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK";
-      case MediaPlayer.MEDIA_ERROR_SERVER_DIED: return "MEDIA_ERROR_SERVER_DIED";
-      case MediaPlayer.MEDIA_ERROR_TIMED_OUT: return "MEDIA_ERROR_TIMED_OUT";
-      case MediaPlayer.MEDIA_ERROR_UNKNOWN: return "MEDIA_ERROR_UNKNOWN";
-      case MediaPlayer.MEDIA_ERROR_UNSUPPORTED: return "MEDIA_ERROR_UNSUPPORTED";
-      case MediaPlayer.MEDIA_INFO_AUDIO_NOT_PLAYING: return "MEDIA_INFO_AUDIO_NOT_PLAYING";
-      case MediaPlayer.MEDIA_INFO_BAD_INTERLEAVING: return "MEDIA_INFO_BAD_INTERLEAVING";
-      case MediaPlayer.MEDIA_INFO_BUFFERING_END: return "MEDIA_INFO_BUFFERING_END";
-      case MediaPlayer.MEDIA_INFO_BUFFERING_START: return "MEDIA_INFO_BUFFERING_START";
-      case MediaPlayer.MEDIA_INFO_METADATA_UPDATE: return "MEDIA_INFO_METADATA_UPDATE";
-      case MediaPlayer.MEDIA_INFO_NOT_SEEKABLE: return "MEDIA_INFO_NOT_SEEKABLE";
-      case MediaPlayer.MEDIA_INFO_STARTED_AS_NEXT: return "MEDIA_INFO_STARTED_AS_NEXT";
-      case MediaPlayer.MEDIA_INFO_SUBTITLE_TIMED_OUT: return "MEDIA_INFO_SUBTITLE_TIMED_OUT";
-      case MediaPlayer.MEDIA_INFO_UNSUPPORTED_SUBTITLE: return "MEDIA_INFO_UNSUPPORTED_SUBTITLE";
-      case MediaPlayer.MEDIA_INFO_VIDEO_NOT_PLAYING: return "MEDIA_INFO_VIDEO_NOT_PLAYING";
-      case MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START: return "MEDIA_INFO_VIDEO_RENDERING_START";
-      case MediaPlayer.MEDIA_INFO_VIDEO_TRACK_LAGGING: return "MEDIA_INFO_VIDEO_TRACK_LAGGING";
+      case MediaPlayer.MEDIA_ERROR_IO:
+        return "MEDIA_ERROR_IO";
+      case MediaPlayer.MEDIA_ERROR_MALFORMED:
+        return "MEDIA_ERROR_MALFORMED";
+      case MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK:
+        return "MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK";
+      case MediaPlayer.MEDIA_ERROR_SERVER_DIED:
+        return "MEDIA_ERROR_SERVER_DIED";
+      case MediaPlayer.MEDIA_ERROR_TIMED_OUT:
+        return "MEDIA_ERROR_TIMED_OUT";
+      case MediaPlayer.MEDIA_ERROR_UNKNOWN:
+        return "MEDIA_ERROR_UNKNOWN";
+      case MediaPlayer.MEDIA_ERROR_UNSUPPORTED:
+        return "MEDIA_ERROR_UNSUPPORTED";
+      case MediaPlayer.MEDIA_INFO_AUDIO_NOT_PLAYING:
+        return "MEDIA_INFO_AUDIO_NOT_PLAYING";
+      case MediaPlayer.MEDIA_INFO_BAD_INTERLEAVING:
+        return "MEDIA_INFO_BAD_INTERLEAVING";
+      case MediaPlayer.MEDIA_INFO_BUFFERING_END:
+        return "MEDIA_INFO_BUFFERING_END";
+      case MediaPlayer.MEDIA_INFO_BUFFERING_START:
+        return "MEDIA_INFO_BUFFERING_START";
+      case MediaPlayer.MEDIA_INFO_METADATA_UPDATE:
+        return "MEDIA_INFO_METADATA_UPDATE";
+      case MediaPlayer.MEDIA_INFO_NOT_SEEKABLE:
+        return "MEDIA_INFO_NOT_SEEKABLE";
+      case MediaPlayer.MEDIA_INFO_STARTED_AS_NEXT:
+        return "MEDIA_INFO_STARTED_AS_NEXT";
+      case MediaPlayer.MEDIA_INFO_SUBTITLE_TIMED_OUT:
+        return "MEDIA_INFO_SUBTITLE_TIMED_OUT";
+      case MediaPlayer.MEDIA_INFO_UNSUPPORTED_SUBTITLE:
+        return "MEDIA_INFO_UNSUPPORTED_SUBTITLE";
+      case MediaPlayer.MEDIA_INFO_VIDEO_NOT_PLAYING:
+        return "MEDIA_INFO_VIDEO_NOT_PLAYING";
+      case MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START:
+        return "MEDIA_INFO_VIDEO_RENDERING_START";
+      case MediaPlayer.MEDIA_INFO_VIDEO_TRACK_LAGGING:
+        return "MEDIA_INFO_VIDEO_TRACK_LAGGING";
       default:
         return null;
     }
@@ -73,7 +92,7 @@ public class MusicPlayer {
 
       mp.setOnErrorListener((player, what, extra) -> {
         MusicPlayer.stop();
-        logger.i(TAG, "what = " + mediaStrError(what));
+        logger.e(TAG, "what = " + mediaStrError(what));
         return true;
       });
 
@@ -91,6 +110,7 @@ public class MusicPlayer {
 
   public static synchronized void stop() {
     if (mp == null) {
+      logger.d(TAG, "MusicPlayer is null");
       return;
     }
 
@@ -107,5 +127,29 @@ public class MusicPlayer {
     }
 
     logger.d(TAG, "music released");
+  }
+
+  public static synchronized void pause() {
+    if (mp == null) {
+      logger.d(TAG, "MusicPlayer is null");
+      return;
+    }
+
+    if (mp.isPlaying()) {
+      mp.pause();
+    }
+
+    logger.d(TAG, "music paused");
+  }
+
+  public static synchronized void resume() {
+    if (mp == null) {
+      return;
+    }
+
+    // call start again to resume
+    mp.start();
+
+    logger.d(TAG, "music resumed");
   }
 }

@@ -219,45 +219,61 @@ public class ApiServer {
 
         case MUSIC -> {
 
-          if (action.equals("stop")) {
+          switch (action) {
+            case "stop" -> {
+              MusicPlayer.stop();
 
-            MusicPlayer.stop();
+              if (Config.LOG_LEVEL == INFO) {
+                System.out.printf(
+                  "[SERVER] music stop from: %s%n",
+                  client
+                );
+              }
 
-            if (Config.LOG_LEVEL == INFO) {
-              System.out.printf(
-                "[SERVER] music stop from: %s%n",
-                client
-              );
+              break;
             }
 
-            break;
-          }
+            case "play" -> {
 
-          if (!action.equals("play")) {
-            out.println("ERROR: music [play|stop]");
-            break;
-          }
+              String path = readLine(in);
 
-          String path = readLine(in);
+              if (path == null || path.isBlank()) {
+                out.println("ERROR: missing path");
+                break;
+              }
 
-          if (path == null || path.isBlank()) {
-            out.println("ERROR: missing path");
-            break;
-          }
+              try {
+                MusicPlayer.play(path);
 
-          try {
-            MusicPlayer.play(path);
+                if (Config.LOG_LEVEL == INFO) {
+                  System.out.printf(
+                    "[SERVER] music: '%s' from: %s%n",
+                    path,
+                    client
+                  );
+                }
 
-            if (Config.LOG_LEVEL == INFO) {
-              System.out.printf(
-                "[SERVER] music: '%s' from: %s%n",
-                path,
-                client
-              );
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
             }
 
-          } catch (Exception e) {
-            e.printStackTrace();
+            case "pause" -> {
+              try {
+                MusicPlayer.pause();
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
+            }
+
+            case "resume" -> {
+              try {
+                MusicPlayer.resume();
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
+            }
+
           }
         }
       }
