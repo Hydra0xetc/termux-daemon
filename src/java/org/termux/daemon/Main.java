@@ -43,10 +43,14 @@ public class Main {
 
   }
 
-  private static String getVer() {
-    return System.getenv("PROGRAM_VER") != null
-      ? System.getenv("PROGRAM_VER")
+  private static String getVerAndBuildType() {
+    String version = System.getenv("VERSION") != null
+      ? System.getenv("VERSION")
       : "Unknow";
+    String buildType = System.getenv("BUILD_TYPE") != null
+      ? System.getenv("BUILD_TYPE")
+      : "Unknow";
+    return String.format("%s-%s", version, buildType);
   }
 
   public static void main(String[] args) throws Exception {
@@ -59,7 +63,7 @@ public class Main {
     Arg<Boolean> help
       = new Arg<>("--help", false, "print this help message");
     Arg<String> version
-      = new Arg<>("--version", getVer(), "show version");
+      = new Arg<>("--version", getVerAndBuildType(), "show version");
 
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals(help.flag)) {

@@ -102,12 +102,15 @@ process_dex ()
 __create_script_runner ()
 {
   ENTRY_CLASS=$(echo "$PACKAGE_NAME" | tr / .).Main
+  # NOTE: Maybe the version and build type information
+  # should be stored in $SHARE_DIR/INFO or something similar.
   content=$(cat << EOF
 #!/system/bin/env sh
 
 HERE="\$(dirname "\$(readlink -f "\$0")")"
 
-export PROGRAM_VER="$VERSION"
+export VERSION="$VERSION"
+export BUILD_TYPE="$BUILD_TYPE"
 export PATH=/system/bin/
 # TODO: Handle symlinked bin directories.
 # NOTE: If the bin directory is a symlink, "../share"

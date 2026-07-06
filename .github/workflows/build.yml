@@ -1,4 +1,4 @@
-name: Build Release Project
+name: Build Project
 
 on:
   push:
@@ -7,10 +7,21 @@ on:
 
 jobs:
   build:
+    name: Build (${{ matrix.arch }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - arm64-v8a
+          - armeabi-v7a
 
     permissions:
       contents: write
+
+    env:
+      VERSION: ${{ github.ref_name }}
 
     steps:
       - name: Checkout repository
@@ -25,61 +36,42 @@ jobs:
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Configure Android Tools
+      - name: Configure build
         run: |
-          SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
-          D8_PATH=$(find "$SDK_ROOT/build-tools" -name d8 | sort -V | tail -n 1)
+          sed -i "s|^ANDROID_ABI=.*|ANDROID_ABI=${{ matrix.arch }}|" config.sh
 
-          [ -n "$D8_PATH" ] || {
-            echo "d8 not found"
-            exit 1
-          }
-
-          sed -i "s|^D8=.*|D8=$D8_PATH|" config.sh
-          sed -i "s|^MINIFIED=.*|MINIFIED=false|" config.sh
-
-      - name: Build project
+      - name: Build debug
         run: |
+          sed -i "s|^BUILD_TYPE=.*|BUILD_TYPE=debug|" config.sh
+          sed -i "s|^VERSION=.*|VERSION=${VERSION}|" config.sh
           chmod +x build.sh
           ./build.sh
 
-
-      - name: Build Termux binary
+      - name: Package debug
         run: |
-          mkdir -p build-output
-          chmod 777 build-output
+          PKG="termux-daemon-${VERSION}-${{ matrix.arch }}-debug"
+          mkdir "$PKG"
+          cp -a build/termux-daemon-${{ matrix.arch }}-debug/. "$PKG/"
+          tar -cvzf "${PKG}.tar.gz" "$PKG"
 
-          docker run --rm \
-            --user root \
-            -v "$PWD:/workspace" \
-            -w /workspace \
-            termux/termux-docker:aarch64 \
-            bash -c '
-              id
-              whoami
-              apt update -y
-              apt install -y clang
-
-              cc -o /workspace/build-output/android-daemon src/cpp/android-daemon.c
-            '
+      - name: Build release
+        run: |
+          sed -i "s|^BUILD_TYPE=.*|BUILD_TYPE=release|" config.sh
+          sed -i "s|^VERSION=.*|VERSION=${VERSION}|" config.sh
+          chmod +x build.sh
+          ./build.sh
 
       - name: Package release
         run: |
-          export RELEASE_NAME="termux-daemon-${{ github.ref_name }}"
-          mkdir -p $RELEASE_NAME
+          PKG="termux-daemon-${VERSION}-${{ matrix.arch }}-release"
+          mkdir "$PKG"
+          cp -a build/termux-daemon-${{ matrix.arch }}-release/. "$PKG/"
+          tar -cvzf "${PKG}.tar.gz" "$PKG"
 
-          cp termux-daemon $RELEASE_NAME
-          cp build-output/android-daemon $RELEASE_NAME
-          cp termux-daemon.apk $RELEASE_NAME
-
-          tar -czvf \
-            $RELEASE_NAME.tar.gz \
-            "$RELEASE_NAME"
-
-      - name: Create GitHub Release
+      - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-
           files: |
-            termux-daemon-${{ github.ref_name }}.tar.gz
+            termux-daemon-${{ github.ref_name }}-${{ matrix.arch }}-debug.tar.gz
+            termux-daemon-${{ github.ref_name }}-${{ matrix.arch }}-release.tar.gz
