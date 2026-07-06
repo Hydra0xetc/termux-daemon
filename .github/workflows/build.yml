@@ -22,6 +22,10 @@ jobs:
 
     env:
       VERSION: ${{ github.ref_name }}
+      CMAKE_VERSION: 3.22.1
+      BUILD_TOOLS_VER: 35.0.0
+      ANDROID_API: 29
+      NDK_VERSION: 29.0.14206865
 
     steps:
       - name: Checkout repository
@@ -36,14 +40,36 @@ jobs:
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
 
+      - name: Install Android SDK components
+        run: |
+          SDKMANAGER="$(find "$ANDROID_SDK_ROOT/cmdline-tools" -type f -name sdkmanager | head -n1)"
+
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found"
+            exit 1
+          else
+            echo "found sdkmanager at: $SDKMANAGER"
+          fi
+
+          yes | "$SDKMANAGER" \
+            "build-tools;${BUILD_TOOLS_VER}" \
+            "platforms;android-${ANDROID_API}" \
+            "cmake;${CMAKE_VERSION}" \
+            "ndk;${NDK_VERSION}"
+
       - name: Configure build
         run: |
           sed -i "s|^ANDROID_ABI=.*|ANDROID_ABI=${{ matrix.arch }}|" config.sh
+          sed -i "s|^ANDROID_API=.*|ANDROID_API=${ANDROID_API}|" config.sh
+          sed -i "s|^CMAKE_VERSION=.*|CMAKE_VERSION=${CMAKE_VERSION}|" config.sh
+          sed -i "s|^BUILD_TOOLS_VER=.*|BUILD_TOOLS_VER=${BUILD_TOOLS_VER}|" config.sh
+          sed -i "s|^ANDROID_NDK_PATH=.*|ANDROID_NDK_PATH=\$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}|" config.sh
+
+          sed -i "s|^VERSION=.*|VERSION=${VERSION}|" config.sh
 
       - name: Build debug
         run: |
           sed -i "s|^BUILD_TYPE=.*|BUILD_TYPE=debug|" config.sh
-          sed -i "s|^VERSION=.*|VERSION=${VERSION}|" config.sh
           chmod +x build.sh
           ./build.sh
 
@@ -57,7 +83,6 @@ jobs:
       - name: Build release
         run: |
           sed -i "s|^BUILD_TYPE=.*|BUILD_TYPE=release|" config.sh
-          sed -i "s|^VERSION=.*|VERSION=${VERSION}|" config.sh
           chmod +x build.sh
           ./build.sh
 
