@@ -108,6 +108,10 @@ __create_script_runner ()
 HERE="\$(dirname "\$(readlink -f "\$0")")"
 
 export PATH=/system/bin/
+# TODO: Handle symlinked bin directories.
+# NOTE: If the bin directory is a symlink, "../share"
+# is resolved relative to the symlink target rather than
+# the original path, so the APK cannot be found.
 export CLASSPATH=\$HERE/../share/$SCRIPT_NAME/$OUTPUT_APK
 exec app_process64 -Xmx10m -Xnoimage-dex2oat / "$ENTRY_CLASS" "\$@"
 EOF
@@ -184,7 +188,7 @@ process_cpp ()
 
 }
 
-main ()
+build ()
 {
   clean_and_make
   process_cpp
@@ -193,7 +197,11 @@ main ()
   process_java
   process_dex
   package_all
-
 }
 
-main
+main ()
+{
+  build
+}
+
+main "$@"
