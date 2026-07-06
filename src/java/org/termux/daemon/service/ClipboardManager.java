@@ -1,4 +1,4 @@
-package org.termux.daemon.module;
+package org.termux.daemon.service;
 
 import org.termux.daemon.FakeContext;
 import android.content.ClipData;

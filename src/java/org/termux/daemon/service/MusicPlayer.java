@@ -1,4 +1,4 @@
-package org.termux.daemon.module;
+package org.termux.daemon.service;
 
 import android.media.MediaPlayer;
 import android.os.Looper;

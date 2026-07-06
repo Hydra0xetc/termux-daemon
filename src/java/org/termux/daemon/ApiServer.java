@@ -10,9 +10,9 @@ import java.net.Socket;
 
 import java.nio.charset.StandardCharsets;
 
-import org.termux.daemon.module.ClipboardManager;
-import org.termux.daemon.module.ContentResolver;
-import org.termux.daemon.module.MusicPlayer;
+import org.termux.daemon.service.ClipboardManager;
+import org.termux.daemon.service.ContentResolver;
+import org.termux.daemon.service.MusicPlayer;
 
 import static org.termux.daemon.Logger.LogLevel.INFO;
 

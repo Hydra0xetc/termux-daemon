@@ -46,7 +46,7 @@ clean_and_make ()
   echo "[*] cleaning build output"
   # NOTE: since CMakeLists or ndk-build know if source is change
   # we dont need to remove cpp build dir
-  rm -rf "$JAVA_BUILD_DIR" "$OUTPUT_APK"
+  rm -rf "$JAVA_BUILD_DIR"
   mkdir -p "$JAVA_BUILD_DIR"
 }
 
