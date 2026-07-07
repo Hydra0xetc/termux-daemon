@@ -8,7 +8,7 @@ external applications.
 You can add this command to your bashrc to automatically start
 the server in the background:
 ```bash
-start_clipboard_daemon() {
+start_termux_daemon() {
   local PORT=6969
   local LOG="$PREFIX/var/log/termux-daemon.log"
 
@@ -19,7 +19,7 @@ start_clipboard_daemon() {
   termux-daemon --port "$PORT" &>>"$LOG" 2>&1 &
 }
 
-start_clipboard_daemon
+start_termux_daemon
 ```
 Once the server is running, you can call `android-daemon` with a service
 and its subcommand. For example, to get the current system clipboard
@@ -46,6 +46,47 @@ it die right after each call. So the question became: what if we initialize
 the Android JVM once and keep it alive instead? That's exactly what this project
 does — it initializes the Android JVM (via `app_process`) a single time and
 keeps it running.
+
+## Integreting with another tools
+### neovim
+```lua
+vim.g.clipboard = {
+  name = "android-clipboard",
+  copy = {
+    ["+"] = { "android-daemon", "clipboard", "set" },
+    ["*"] = { "android-daemon", "clipboard", "set" },
+  },
+  paste = {
+    ["+"] = { "android-daemon", "clipboard", "get" },
+    ["*"] = { "android-daemon", "clipboard", "get" },
+  },
+  cache_enabled = 0,
+}
+
+-- override vim.ui.open implementation
+vim.ui.open = function(path, opts)
+  local function startsWith(str, prefix)
+    return string.sub(str, 1, #prefix) == prefix
+  end
+
+  if startsWith(path, "http://") or startsWith(path, "https://") then
+    vim.fn.jobstart({ "android-daemon", "open", "url", path, }, {
+      detach = true,
+    })
+  end
+
+  vim.fn.jobstart({ "android-daemon", "open", "file", path, }, {
+    detach = true,
+  })
+
+  return true
+end
+```
+
+### tmux
+```tmux
+bind-key p run-shell "android-daemon clipboard get | tmux load-buffer - && tmux paste-buffer"
+```
 
 ## Comparison
 
