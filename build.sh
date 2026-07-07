@@ -202,6 +202,10 @@ process_cpp ()
 
 __handle_build ()
 {
+  if [[ $# -eq 0 ]]; then
+    __handle_build cpp java
+  fi
+
   for i in "$@"
   do
     case "$i" in
@@ -213,10 +217,6 @@ __handle_build ()
       ;;
       cpp)
         process_cpp
-      ;;
-      *)
-        echo "usage __handle_build [java|cpp]"
-        exit 1
       ;;
     esac
 
