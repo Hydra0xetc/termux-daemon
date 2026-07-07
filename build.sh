@@ -13,6 +13,9 @@ CMAKE_TOOLCHAIN="$ANDROID_NDK_PATH/build/cmake/android.toolchain.cmake"
 RESULT_DIR="$BUILD/termux-daemon-$ANDROID_ABI-$BUILD_TYPE"
 SCRIPT_NAME=$(basename "$OUTPUT_APK" .apk)
 
+SHARE_DIR="$RESULT_DIR/share/$SCRIPT_NAME"
+BIN_DIR="$RESULT_DIR/bin"
+
 set -e
 [[ $DEBUG == true ]] && set -x
 
@@ -117,7 +120,13 @@ export PATH=/system/bin/
 # is resolved relative to the symlink target rather than
 # the original path, so the APK cannot be found.
 export CLASSPATH=\$HERE/../share/$SCRIPT_NAME/$OUTPUT_APK
-exec app_process64 -Xmx10m -Xnoimage-dex2oat / "$ENTRY_CLASS" "\$@"
+
+if [ -f "\$CLASSPATH" ]; then
+  exec app_process64 -Xmx10m -Xnoimage-dex2oat / "$ENTRY_CLASS" "\$@"
+else
+  echo "cannot found: \$CLASSPATH"
+fi
+
 EOF
   )
 
@@ -128,13 +137,11 @@ EOF
 package_all ()
 {
   echo "[*] Packaging..."
-  SHARE_DIR="$RESULT_DIR/share/$SCRIPT_NAME"
-  BIN_DIR="$RESULT_DIR/bin"
   mkdir -p "$SHARE_DIR"
   mkdir -p "$BIN_DIR"
-  zip -jq "$SHARE_DIR/$OUTPUT_APK" "$JAVA_BUILD_DIR/classes.dex"
   "$CMAKE" --install "$CPP_BUILD_DIR"
   __create_script_runner "$BIN_DIR/$SCRIPT_NAME"
+  zip -jq "$SHARE_DIR/$OUTPUT_APK" "$JAVA_BUILD_DIR/classes.dex"
   cp LICENSE "$SHARE_DIR"
 
   echo "[*] Done build termux-daemon-$ANDROID_ABI-$BUILD_TYPE"
@@ -175,6 +182,7 @@ process_cpp ()
          -DANDROID_PLATFORM="$ANDROID_API" \
          -DCMAKE_BUILD_TYPE="${BUILD_TYPE^}" \
          -DCMAKE_INSTALL_PREFIX="$RESULT_DIR/" \
+         -DCMAKE_OUTPUT_NAME="$OUTPUT_NATIVE" \
          -GNinja
 
        # NOTE: "string^" means uppercase first char
@@ -192,20 +200,147 @@ process_cpp ()
 
 }
 
-build ()
+__handle_build ()
 {
-  clean_and_make
-  process_cpp
-  resolve_deps
-  process_aidl
-  process_java
-  process_dex
+  for i in "$@"
+  do
+    case "$i" in
+      java)
+        clean_and_make
+        process_aidl
+        process_java
+        process_dex
+      ;;
+      cpp)
+        process_cpp
+      ;;
+      *)
+        echo "usage __handle_build [java|cpp]"
+        exit 1
+      ;;
+    esac
+
+  done
+
   package_all
+}
+
+__handle_run ()
+{
+  local exe="$1"
+  shift
+
+  local path="$BIN_DIR/$exe"
+
+  [[ -f "$path" ]] || {
+    echo "[!] cannot find executable '$exe'"
+    exit 127
+  }
+
+  [[ -x "$path" ]] || {
+    echo "[!] '$exe' is not executable"
+    exit 126
+  }
+
+  # print with $ so its look like executing in the command line
+  echo "\$ $(basename "$path") $@"
+  exec "$path" "$@"
+}
+
+__get_exe_type ()
+{
+  local exe="$1"
+
+  # ELF executable
+  if head -c 4 "$exe" | cmp -s - <(printf '\177ELF'); then
+    echo "native"
+    return
+  fi
+
+  # Script runner for dex
+  if grep -q "app_process" "$exe" 2>/dev/null; then
+    echo "dex"
+    return
+  fi
+
+  echo "unknown"
+}
+
+__handle_list_exe ()
+{
+  local i=1
+
+  echo "Available executables:"
+
+  for exe in "$BIN_DIR"/*; do
+    [[ -f "$exe" && -x "$exe" ]] || continue
+
+    printf " %2d. %-20s %s\n" \
+      "$i" \
+      "$(basename "$exe")" \
+      "$(__get_exe_type "$exe")"
+
+    ((i++))
+  done
+}
+
+print_usage ()
+{
+  content=$(cat << EOF
+usage: $(basename "$0") [OPTIONS]
+
+options:
+    -h/--help              print this help message
+    -b/--build [java|cpp]  build only java or cpp, default java and cpp
+    -r/--run <exe>         run the in the package app, try -l/--list to list them
+    -l/--list-exe          list executable in then bin package app
+EOF
+)
+  echo "$content"
+
 }
 
 main ()
 {
-  build
+  if [[ $# -eq 0 ]]; then
+    __handle_build cpp java
+    return
+  fi
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --run|-r)
+        shift
+        if [[ -z "$@" ]]; then
+          echo "[!] -r/--run must provide a exe"
+          exit 1
+        fi
+        __handle_run "$@"
+        ;;
+
+      --list-exe|-l)
+        __handle_list_exe
+        return
+        ;;
+
+      --build|-b)
+        shift
+        __handle_build "$@"
+        return
+        ;;
+
+      --help|-h)
+        print_usage
+        return
+        ;;
+
+      *)
+        echo "Error: Unknown option '$1'"
+        print_usage
+        exit 1
+        ;;
+    esac
+  done
 }
 
 main "$@"

@@ -9,7 +9,7 @@ BUILD_TYPE=debug
 BUILD_TOOLS_VER=35.0.0
 CMAKE_VERSION=4.3.4
 ANDROID_API=29
-# NOTE: for now lets just focused only one arch
+# NOTE: for now lets just focused only two arch
 ANDROID_ABI=arm64-v8a
 ANDROID_SDK_PATH=$ANDROID_SDK_ROOT
 ANDROID_NDK_PATH=$ANDROID_NDK_HOME

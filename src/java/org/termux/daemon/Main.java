@@ -12,11 +12,7 @@ class Arg<T> {
 
   public static ArrayList<Arg> allArgs = new ArrayList<>();
 
-  public Arg(
-      String flag,
-      T defaultValue,
-      String description
-  ) {
+  public Arg(String flag, T defaultValue, String description) {
     this.flag = flag;
     this.defaultValue = defaultValue;
     this.value = defaultValue;
