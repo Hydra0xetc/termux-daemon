@@ -24,7 +24,8 @@ resolve_deps ()
   if [[ -f $ANDROID_LIB ]]; then
     echo "[*] found android.jar with api '$ANDROID_API'"
   else
-    echo "[!] cannot found android.jar with api '$ANDROID_API' are you sure you have installed it?"
+    echo "[!] cannot found android.jar with api '$ANDROID_API'"
+    echo "[*] are you sure you have installed it?"
     exit 127
   fi
 
@@ -44,15 +45,6 @@ resolve_deps ()
 
 }
 
-clean_and_make ()
-{
-  echo "[*] cleaning build output"
-  # NOTE: since CMakeLists or ndk-build know if source is change
-  # we dont need to remove cpp build dir
-  rm -rf "$JAVA_BUILD_DIR"
-  mkdir -p "$JAVA_BUILD_DIR"
-}
-
 process_aidl ()
 {
   echo "[*] processing aidl"
@@ -69,6 +61,7 @@ process_aidl ()
 
 process_java ()
 {
+  mkdir -p "$JAVA_BUILD_DIR"
   echo "[*] Compiling to class"
   SOURCE_FILE="$JAVA_BUILD_DIR/sources.txt"
   find "$JAVA_SRC_DIR" -name "*.java" > "$SOURCE_FILE"
@@ -141,7 +134,13 @@ package_all ()
   mkdir -p "$BIN_DIR"
   "$CMAKE" --install "$CPP_BUILD_DIR"
   __create_script_runner "$BIN_DIR/$SCRIPT_NAME"
-  zip -jq "$SHARE_DIR/$OUTPUT_APK" "$JAVA_BUILD_DIR/classes.dex"
+  APK="$SHARE_DIR/$OUTPUT_APK"
+  DEX="$JAVA_BUILD_DIR/classes.dex"
+
+  if [[ ! -f "$APK" || "$DEX" -nt "$APK" ]]; then
+    echo "[*] Updating APK"
+    zip -jq "$APK" "$DEX"
+  fi
   cp LICENSE "$SHARE_DIR"
 
   echo "[*] Done build termux-daemon-$ANDROID_ABI-$BUILD_TYPE"
@@ -210,7 +209,6 @@ __handle_build ()
   do
     case "$i" in
       java)
-        clean_and_make
         process_aidl
         process_java
         process_dex

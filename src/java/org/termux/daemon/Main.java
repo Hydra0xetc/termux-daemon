@@ -28,6 +28,9 @@ class Arg<T> {
 }
 
 public class Main {
+  private static final String TAG = "Main";
+  private static Logger logger = Logger.getInstance();
+
   private static void printHelp(String programName,
       ArrayList<Arg> argsParse) {
 
@@ -83,7 +86,13 @@ public class Main {
 
     }
 
-    ApiServer.start(port.value);
+    try {
+      ApiServer.start(port.value);
+    } catch (java.net.BindException e) {
+      logger.e(e.getMessage());
+      System.exit(1);
+    }
+
 
   }
 }

@@ -46,13 +46,13 @@ enum Service {
 }
 
 public class ApiServer {
-  private static final Logger logger = Logger.getInstance();
+  private static final String TAG = "SERVER";
+  private static Logger logger = Logger.getInstance();
 
   public static void start(int port)
-      throws Exception {
+      throws Exception, java.net.BindException {
 
-      ServerSocket server =
-        new ServerSocket(port);
+      ServerSocket server = new ServerSocket(port);
 
       System.out.println("Server listening on 127.0.0.1:" + port);
 
@@ -62,8 +62,7 @@ public class ApiServer {
       }
   }
 
-  private static String readLine(InputStream in)
-      throws Exception {
+  private static String readLine(InputStream in) throws Exception {
 
     ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
@@ -128,16 +127,8 @@ public class ApiServer {
               long t1 = System.nanoTime();
 
               if (Config.LOG_LEVEL == INFO) {
-                System.out.printf(
-                  "get=%.3f ms%n",
-                  (t1 - t0) / 1e6
-                );
-
-                System.out.printf(
-                  "[SERVER] get: '%s' from: %s%n",
-                  content,
-                  client
-                );
+                logger.i(TAG, String.format("get=%.3f ms%n", (t1 - t0) / 1e6));
+                logger.i(TAG, String.format("get: '%s' from: %s%n", content, client));
               }
 
               outRaw.write(
@@ -172,17 +163,10 @@ public class ApiServer {
               long t2 = System.nanoTime();
 
               if (Config.LOG_LEVEL == INFO) {
-                System.out.printf(
-                  "[SERVER] set: '%s' from: %s%n",
-                  content,
-                  client
-                );
-
-                System.out.printf(
-                  "read=%.3f ms, set=%.3f ms%n",
-                  (t1 - t0) / 1e6,
-                  (t2 - t1) / 1e6
-                );
+                logger.i(TAG, String.format("set: '%s' from: %s%n", content, client));
+                logger.i(TAG, String.format("read=%.3f ms, set=%.3f ms%n",
+                    (t1 - t0) / 1e6, (t2 - t1) / 1e6
+                ));
               }
             }
 
@@ -207,11 +191,8 @@ public class ApiServer {
                 ContentResolver.file(path, null);
 
                 if (Config.LOG_LEVEL == INFO) {
-                  System.out.printf(
-                    "[SERVER] open: '%s' from: %s%n",
-                    path,
-                    client
-                  );
+                  logger.i(TAG,
+                      String.format("open: '%s' from: %s%n", path, client));
                 }
 
               } catch (Exception e) {
@@ -239,10 +220,7 @@ public class ApiServer {
               MusicPlayer.stop();
 
               if (Config.LOG_LEVEL == INFO) {
-                System.out.printf(
-                  "[SERVER] music stop from: %s%n",
-                  client
-                );
+                logger.i(TAG, "music stop");
               }
 
               break;
@@ -261,11 +239,8 @@ public class ApiServer {
                 MusicPlayer.play(path);
 
                 if (Config.LOG_LEVEL == INFO) {
-                  System.out.printf(
-                    "[SERVER] music: '%s' from: %s%n",
-                    path,
-                    client
-                  );
+                  logger.i(TAG,
+                      String.format("music: '%s' from: %s%n", path, client));
                 }
 
               } catch (Exception e) {
