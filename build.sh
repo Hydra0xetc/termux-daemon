@@ -62,14 +62,41 @@ process_aidl ()
 process_java ()
 {
   mkdir -p "$JAVA_BUILD_DIR"
-  echo "[*] Compiling to class"
   SOURCE_FILE="$JAVA_BUILD_DIR/sources.txt"
   find "$JAVA_SRC_DIR" -name "*.java" > "$SOURCE_FILE"
-  javac -cp "$ANDROID_LIB" -d "$JAVA_BUILD_DIR" --release 17 "@$SOURCE_FILE"
+
+  # skip only if source change
+  if [[ -n $(find "$JAVA_SRC_DIR" -name "*.java" -newer "$JAVA_BUILD_DIR/.stamp" 2>/dev/null)
+    || ! -f "$JAVA_BUILD_DIR/.stamp" ]]; then
+    echo "[*] Compiling to class"
+    javac -cp "$ANDROID_LIB" -d "$JAVA_BUILD_DIR" --release 17 "@$SOURCE_FILE"
+    touch "$JAVA_BUILD_DIR/.stamp"
+  else
+    echo "[*] No java changes, skip javac"
+  fi
 }
 
 process_dex ()
 {
+  local STAMP="$JAVA_BUILD_DIR/.dex-stamp-$BUILD_TYPE"
+  local NEEDS_BUILD=false
+
+  if [[ ! -f "$STAMP" ]]; then
+    NEEDS_BUILD=true
+  elif [[ -n $(find "$JAVA_BUILD_DIR" -name "*.class" -newer "$STAMP" -print -quit) ]]; then
+    NEEDS_BUILD=true
+  fi
+
+  # force rebuild if proguard rules change
+  if [[ $BUILD_TYPE == release && -f "$RULES" && "$RULES" -nt "$STAMP" ]]; then
+    NEEDS_BUILD=true
+  fi
+
+  if [[ $NEEDS_BUILD == false ]]; then
+    echo "[*] No class changes, skip dex"
+    return
+  fi
+
   if [[ $BUILD_TYPE == release ]]; then
     echo "[*] Compiling to dex (minify)"
 
@@ -93,6 +120,8 @@ process_dex ()
     echo "[*] Unknow build type: $BUILD_TYPE"
     exit 1
   fi
+
+  touch "$STAMP"
 }
 
 __create_script_runner ()
@@ -114,10 +143,10 @@ export PATH=/system/bin/
 # the original path, so the APK cannot be found.
 export CLASSPATH=\$HERE/../share/$SCRIPT_NAME/$OUTPUT_APK
 
-: "\${ART_OPTS:=-Xmx10m}"
+: "\${ART_OPTS:=-Xmx10m -Xnoimage-dex2oat}"
 
 if [ -f "\$CLASSPATH" ]; then
-  exec app_process64 -Xnoimage-dex2oat \$ART_OPTS / "$ENTRY_CLASS" "\$@"
+  exec app_process64 \$ART_OPTS / "$ENTRY_CLASS" "\$@"
 else
   echo "cannot found: \$CLASSPATH"
 fi
@@ -213,8 +242,8 @@ __handle_build ()
     case "$i" in
       java)
         process_aidl
-        process_java
-        process_dex
+        time process_java
+        time process_dex
       ;;
       cpp)
         process_cpp
@@ -332,7 +361,7 @@ main ()
 
       --help|-h)
         print_usage
-        return
+        return 0
         ;;
 
       *)
