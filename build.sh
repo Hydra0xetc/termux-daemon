@@ -114,8 +114,10 @@ export PATH=/system/bin/
 # the original path, so the APK cannot be found.
 export CLASSPATH=\$HERE/../share/$SCRIPT_NAME/$OUTPUT_APK
 
+: "\${ART_OPTS:=-Xmx10m}"
+
 if [ -f "\$CLASSPATH" ]; then
-  exec app_process64 -Xmx10m -Xnoimage-dex2oat / "$ENTRY_CLASS" "\$@"
+  exec app_process64 -Xnoimage-dex2oat \$ART_OPTS / "$ENTRY_CLASS" "\$@"
 else
   echo "cannot found: \$CLASSPATH"
 fi
