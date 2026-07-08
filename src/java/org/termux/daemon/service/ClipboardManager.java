@@ -1,6 +1,8 @@
 package org.termux.daemon.service;
 
 import org.termux.daemon.FakeContext;
+import org.termux.daemon.Logger;
+
 import android.content.ClipData;
 
 import android.os.ServiceManager;
@@ -9,6 +11,8 @@ import android.os.Looper;
 import java.lang.reflect.Method;
 
 public final class ClipboardManager {
+  private static final String TAG = "ClipboardManager";
+  private static Logger logger = Logger.getInstance();
   private static FakeContext fakeCtx;
   private static Class<?> stubClass;
   private static Method asInterface;

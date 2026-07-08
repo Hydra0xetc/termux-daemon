@@ -1,71 +1,110 @@
-#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
+#include <errno.h>
+#include <limits.h>
 #include <unistd.h>
 #include <libgen.h>
-#include <limits.h>
-#include <errno.h>
-#include <stdbool.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include "config.h"
 
-#define HOST "127.0.0.1"
-#define PORT 6969
+#define UNUSED(s) (void)(s)
 
-#define unused(s) (void)s
-
-typedef void (*CommandHandler)(int argc, char **argv);
-
+typedef void (*ServiceHandler)(int argc, char **argv);
 typedef struct {
   const char *name;
-  CommandHandler handler;
-} SubCommand;
+  ServiceHandler handler;
+} ServiceCmd;
 
 typedef struct {
-  const char *name;
-  const SubCommand *subcmd;
+  ServiceCmd *items;
   size_t count;
-} Command;
+  size_t capacity;
+} ServiceCmds;
 
-static const Command *find_cmd(const Command *cmds, size_t count,
-    const char *name) {
-  for (size_t i = 0; i < count; i++) {
-    if (strcmp(cmds[i].name, name) == 0) {
-      return &cmds[i];
+typedef struct {
+  const char *name;
+  ServiceCmds cmd;
+} Service;
+
+typedef struct {
+  Service *items;
+  size_t count;
+  size_t capacity;
+} Services;
+
+#define arr_push(arr, type, value)                             \
+  do {                                                         \
+    if ((arr)->count == (arr)->capacity) {                     \
+      size_t cap = (arr)->capacity ? (arr)->capacity * 2 : 4;  \
+      void *tmp = realloc((arr)->items, cap * sizeof(type));   \
+      if (!tmp) {                                              \
+        perror("realloc");                                     \
+        exit(EXIT_FAILURE);                                    \
+      }                                                        \
+      (arr)->items = tmp;                                      \
+      (arr)->capacity = cap;                                   \
+    }                                                          \
+    (arr)->items[(arr)->count++] = (value);                    \
+  } while (0)
+
+#define arr_free(arr)         \
+  do {                        \
+    free((arr)->items);       \
+    (arr)->items = NULL;      \
+    (arr)->count = 0;         \
+    (arr)->capacity = 0;      \
+  } while (0)
+
+Services parse_service(char *src) {
+  Services services = {0};
+
+  char *save_line;
+  char *line = strtok_r(src, "\n", &save_line);
+
+  while (line) {
+    char *colon = strchr(line, ':');
+    if (!colon) {
+      line = strtok_r(NULL, "\n", &save_line);
+      continue;
     }
+
+    *colon = '\0';
+
+    Service new_service = { .name = line, .cmd = {0} };
+    arr_push(&services, Service, new_service);
+
+    Service *curr = &services.items[services.count - 1];
+
+    char *save_cmd;
+    char *cmd = strtok_r(colon + 1, ",", &save_cmd);
+
+    while (cmd) {
+      ServiceCmd new_cmd = { .name = cmd, .handler = NULL };
+      arr_push(&curr->cmd, ServiceCmd, new_cmd);
+      cmd = strtok_r(NULL, ",", &save_cmd);
+    }
+
+    line = strtok_r(NULL, "\n", &save_line);
   }
 
-  return NULL;
+  return services;
 }
 
-static const SubCommand *find_subcmd(const Command *cmd,
-    const char *name) {
-  for (size_t i = 0; i < cmd->count; i++) {
-    if (strcmp(cmd->subcmd[i].name, name) == 0) {
-      return &cmd->subcmd[i];
-    }
-  }
+static void bind_handler(Services *services, const char *service,
+    const char *cmd, ServiceHandler handler) {
+  for (size_t i = 0; i < services->count; i++) {
+    if (strcmp(services->items[i].name, service) != 0) continue;
 
-  return NULL;
-}
-
-static void usage(const char *name, const Command *cmds,
-    size_t count) {
-  fprintf(stderr, "usage:\n");
-  for (size_t i = 0; i < count; i++) {
-    fprintf(stderr, "  %s %s [", name, cmds[i].name);
-
-    for (size_t j = 0; j < cmds[i].count; j++) {
-      fprintf(stderr, "%s", cmds[i].subcmd[j].name);
-      if (j + 1 < cmds[i].count) {
-        fputc('|', stderr);
+    for (size_t j = 0; j < services->items[i].cmd.count; j++) {
+      if (!strcmp(services->items[i].cmd.items[j].name, cmd)) {
+        services->items[i].cmd.items[j].handler = handler;
+        return;
       }
     }
-
-    fprintf(stderr, "]\n");
   }
-
-  exit(1);
+  fprintf(stderr, "warning: no such command to bind: %s:%s\n", service, cmd);
 }
 
 static inline char *__get_fullpath(char *path) {
@@ -107,8 +146,8 @@ static int connect_server(void) {
 }
 
 static void clipboard_get(int argc, char **argv) {
-  unused(argc);
-  unused(argv);
+  UNUSED(argc);
+  UNUSED(argv);
 
   int sock = connect_server();
 
@@ -154,7 +193,7 @@ static void clipboard_set(int argc, char **argv) {
 // NOTE: for simplicity, explicitly stating the mime type is
 // not or has not been implemented
 static void open_file(int argc, char **argv) {
-  unused(argv);
+  UNUSED(argv);
 
   if (argc != 3) {
     fprintf(stderr, "usage: open file <path>\n");
@@ -180,7 +219,7 @@ static void open_file(int argc, char **argv) {
 }
 
 static void open_url(int argc, char **argv) {
-  unused(argv);
+  UNUSED(argv);
 
   if (argc != 3) {
     fprintf(stderr, "usage: open url <url>\n");
@@ -220,7 +259,7 @@ static void music_play(int argc, char **argv) {
 }
 
 static void music_pause(int argc, char **argv) {
-  unused(argv);
+  UNUSED(argv);
   if (argc != 2) {
     fprintf(stderr, "usage: music pause\n");
     exit(1);
@@ -235,7 +274,7 @@ static void music_pause(int argc, char **argv) {
 }
 
 static void music_resume(int argc, char **argv) {
-  unused(argv);
+  UNUSED(argv);
   if (argc != 2) {
     fprintf(stderr, "usage: music resume\n");
     exit(1);
@@ -248,7 +287,7 @@ static void music_resume(int argc, char **argv) {
 }
 
 static void music_stop(int argc, char **argv) {
-  unused(argv);
+  UNUSED(argv);
   if (argc != 2) {
     fprintf(stderr, "usage: music stop\n");
     exit(1);
@@ -261,72 +300,137 @@ static void music_stop(int argc, char **argv) {
   close(sock);
 }
 
-int main(int argc, char **argv) {
+static void print_help(const char *program_name) {
+  printf(
+    "Usage: %s <services> [OPTIONS]\n"
+    "\n"
+    "options:\n"
+    "   -h/--help             print this help message\n"
+    "   -l/--list-service     list available services\n"
+  , program_name);
+}
 
-  static const SubCommand clipboard_subs[] = {
-    { "get", clipboard_get },
-    { "set", clipboard_set },
-  };
+static char *__get_service_path(void) {
+    static char result[PATH_MAX];
+    char exe_path[PATH_MAX];
 
-  static const SubCommand music_subs[] = {
-    { "play", music_play },
-    { "stop", music_stop },
-    { "resume", music_resume },
-    { "pause", music_pause },
-  };
-
-  static const SubCommand open_subs[] = {
-    { "file", open_file },
-    { "url", open_url },
-  };
-
-  static const Command commands[] = {
-    {
-      .name = "clipboard",
-      .subcmd = clipboard_subs,
-      .count = (sizeof clipboard_subs / sizeof clipboard_subs[0]),
-    },
-    {
-      .name = "music",
-      .subcmd = music_subs,
-      .count = (sizeof music_subs / sizeof music_subs[0]),
-    },
-    {
-      .name = "open",
-      .subcmd = open_subs,
-      .count = (sizeof open_subs / sizeof open_subs[0])
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len == -1) {
+        result[0] = '\0';
+        return result;
     }
-  };
+    exe_path[len] = '\0';
 
-  size_t commands_len = sizeof(commands) / sizeof(commands[0]);
+    char *dir = dirname(exe_path);
+    snprintf(result, sizeof(result), "%s/../share/termux-daemon/SERVICE", dir);
+    return result;
+}
 
-  const char *program_name = basename(argv[0]);
+int main(int argc, char **argv) {
+  char buffer[2048];
+  const char *service_path = __get_service_path();
+  FILE *fp = fopen(service_path, "rb");
+  if (!fp) {
+    fprintf(stderr, "Error: failed to open file %s: %s\n",
+        service_path, strerror(errno));
+    return EXIT_FAILURE;
+  }
+
+  size_t n = fread(buffer, 1, sizeof(buffer) - 1, fp);
+  if (ferror(fp)) {
+    fprintf(stderr, "Error: failed to read file %s: %s\n",
+        service_path, strerror(errno));
+    fclose(fp);
+    return EXIT_FAILURE;
+  }
+  buffer[n] = '\0';
+  fclose(fp);
+
+  Services services = parse_service(buffer);
+  // TODO: better initialisation service handler
+  bind_handler(&services, "clipboard", "get", clipboard_get);
+  bind_handler(&services, "clipboard", "set", clipboard_set);
+  bind_handler(&services, "music", "play", music_play);
+  bind_handler(&services, "music", "pause", music_pause);
+  bind_handler(&services, "music", "stop", music_stop);
+  bind_handler(&services, "music", "resume", music_resume);
+  bind_handler(&services, "open", "file", open_file);
+  bind_handler(&services, "open", "url", open_url);
 
   if (argc < 2) {
-    usage(program_name, commands, commands_len);
+    print_help(PROGRAM_NAME);
+    arr_free(&services);
+    return EXIT_FAILURE;
+  }
+
+  for (int i = 0; i < argc; i++) {
+    if (!strncmp(argv[i], "-l", 2) ||
+        !strncmp(argv[i], "--list-service", 14)) {
+      printf("Available services: \n");
+      for (int j = 0; j < services.count; j++) {
+        printf("    %s\n", services.items[j].name);
+      }
+      arr_free(&services);
+      return EXIT_SUCCESS;
+    } else if (!strncmp(argv[i], "-h", 2) ||
+        !strncmp(argv[i], "--help", 6)) {
+      print_help(PROGRAM_NAME);
+      return EXIT_SUCCESS;
+    }
+  }
+
+  Service *selected_service = NULL;
+  ServiceCmd *selected_service_cmd = NULL;
+
+  for (size_t i = 0; i < services.count; i++) {
+    if (!strcmp(argv[1], services.items[i].name)) {
+      selected_service = &services.items[i];
+      break;
+    }
+  }
+
+  if (!selected_service) {
+    fprintf(stderr, "Unknown service: %s\n", argv[1]);
+    arr_free(&services);
+    return EXIT_FAILURE;
   }
 
   if (argc < 3) {
-    usage(program_name, commands, commands_len);
+    fprintf(stderr, "Usage: %s [", selected_service->name);
+    for (size_t h = 0; h < selected_service->cmd.count; h++) {
+      printf("%s", selected_service->cmd.items[h].name);
+      if (h + 1 < selected_service->cmd.count) {
+        putchar('|');
+      }
+    }
+    printf("]\n");
+    arr_free(&services);
+    return EXIT_FAILURE;
   }
 
-  const Command *cmd = find_cmd(
-        commands,
-        commands_len,
-        argv[1]
-        );
-
-  if (cmd == NULL) {
-    usage(program_name, commands, commands_len);
+  for (size_t j = 0; j < selected_service->cmd.count; j++) {
+    if (!strcmp(argv[2], selected_service->cmd.items[j].name)) {
+      selected_service_cmd = &selected_service->cmd.items[j];
+      break;
+    }
   }
 
-  const SubCommand *sub = find_subcmd(cmd, argv[2]);
-
-  if (sub == NULL) {
-    usage(program_name, commands, commands_len);
+  if (!selected_service_cmd) {
+    fprintf(stderr, "Unknown command '%s' for service '%s'\n", argv[2], argv[1]);
+    arr_free(&services);
+    return EXIT_FAILURE;
   }
 
-  sub->handler(argc - 1, argv + 1);
+  if (selected_service_cmd->handler) {
+    selected_service_cmd->handler(argc - 1, argv + 1);
+  } else {
+    printf("Command '%s' has no handler registered\n", selected_service_cmd->name);
+  }
+
+  for (size_t i = 0; i < services.count; i++)
+    arr_free(&services.items[i].cmd);
+
+  arr_free(&services);
 
   return 0;
 }

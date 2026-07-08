@@ -1,0 +1,3 @@
+clipboard:get,set
+music:play,pause,stop,resume
+open:file,url

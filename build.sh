@@ -142,6 +142,7 @@ package_all ()
     zip -jq "$APK" "$DEX"
   fi
   cp LICENSE "$SHARE_DIR"
+  cp SERVICE "$SHARE_DIR"
 
   echo "[*] Done build termux-daemon-$ANDROID_ABI-$BUILD_TYPE"
 }
@@ -181,7 +182,7 @@ process_cpp ()
          -DANDROID_PLATFORM="$ANDROID_API" \
          -DCMAKE_BUILD_TYPE="${BUILD_TYPE^}" \
          -DCMAKE_INSTALL_PREFIX="$RESULT_DIR/" \
-         -DCMAKE_OUTPUT_NAME="$OUTPUT_NATIVE" \
+         -DPROGRAM_NAME="$OUTPUT_NATIVE" \
          -GNinja
 
        # NOTE: "string^" means uppercase first char

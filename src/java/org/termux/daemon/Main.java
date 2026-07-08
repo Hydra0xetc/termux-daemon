@@ -2,6 +2,9 @@ package org.termux.daemon;
 
 import android.os.Looper;
 import java.util.ArrayList;
+import java.util.List;
+
+import java.io.File;
 
 class Arg<T> {
   public final String flag;
