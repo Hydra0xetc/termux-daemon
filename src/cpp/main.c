@@ -255,8 +255,8 @@ static void music_play(int argc, char **argv) {
   dprintf(sock, "music play\n%s\n", fullpath);
   shutdown(sock, SHUT_WR);
 
-  char buf[DEFAULT_BUF_SIZE];
-  __read_stdout(buf, sock);
+  // char buf[DEFAULT_BUF_SIZE];
+  // __read_stdout(buf, sock);
 
   free(fullpath);
   close(sock);
