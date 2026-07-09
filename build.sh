@@ -235,6 +235,7 @@ __handle_build ()
 {
   if [[ $# -eq 0 ]]; then
     __handle_build cpp java
+    return
   fi
 
   for i in "$@"
@@ -242,8 +243,8 @@ __handle_build ()
     case "$i" in
       java)
         process_aidl
-        time process_java
-        time process_dex
+        process_java
+        process_dex
       ;;
       cpp)
         process_cpp
@@ -339,6 +340,17 @@ main ()
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --build|-b)
+        shift
+        local build_args=()
+        while [[ $# -gt 0 && "$1" != -* ]]; do
+          build_args+=("$1")
+          shift
+        done
+
+        __handle_build "${build_args[@]}"
+        ;;
+
       --run|-r)
         shift
         if [[ -z "$@" ]]; then
@@ -350,12 +362,6 @@ main ()
 
       --list-exe|-l)
         __handle_list_exe
-        return
-        ;;
-
-      --build|-b)
-        shift
-        __handle_build "$@"
         return
         ;;
 
