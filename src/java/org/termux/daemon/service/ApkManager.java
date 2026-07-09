@@ -80,15 +80,14 @@ public class ApkManager {
 
   }
 
-  public static void openApk(String apkName) {
+  public static String openApk(String apkName) {
     if (entryList.isEmpty()) {
       scanApk();
     }
 
     ApkEntry entry = entryList.get(apkName);
     if (entry == null) {
-      logger.e("Cannot found apk: " + apkName);
-      return;
+      return "ERROR: could not found apk: " + apkName;
     }
 
     Intent intent = new Intent()
@@ -96,6 +95,7 @@ public class ApkManager {
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
     new ActivityUtils(intent).startActivity();
+    return null;
   }
 
   public static List<String> listApk() {

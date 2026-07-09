@@ -187,8 +187,12 @@ public class ApiServer {
       Service.registerHandler(services,
         "apk", "open", (in, outRaw, client) -> {
           try {
+            PrintWriter out = new PrintWriter(outRaw, true);
             String apkName = readLine(in);
-            ApkManager.openApk(apkName);
+            String msg = ApkManager.openApk(apkName);
+            if (msg != null) {
+              out.println(msg);
+            }
           } catch (Exception e) {
             e.printStackTrace();
           }
