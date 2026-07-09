@@ -303,6 +303,49 @@ static void music_stop(int argc, char **argv) {
   close(sock);
 }
 
+static void apk_open(int argc, char **argv) {
+  UNUSED(argv);
+
+  if (argc != 3) {
+    fprintf(stderr, "usage: apk open <name>\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int sock = connect_server();
+
+  dprintf(sock, "apk open\n%s\n", argv[2]);
+  shutdown(sock, SHUT_WR);
+
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
+  close(sock);
+}
+
+static void apk_list(int argc, char **argv) {
+  UNUSED(argv);
+  UNUSED(argc);
+
+  int sock = connect_server();
+
+  dprintf(sock, "apk list\n");
+  shutdown(sock, SHUT_WR);
+
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
+  close(sock);
+}
+
+static void apk_scan(int argc, char **argv) {
+  int sock = connect_server();
+
+  dprintf(sock, "apk scan\n");
+  shutdown(sock, SHUT_WR);
+
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
+  close(sock);
+}
+
 static void print_help(const char *program_name) {
   printf(
     "Usage: %s <services> [OPTIONS]\n"
@@ -359,6 +402,9 @@ int main(int argc, char **argv) {
   bind_handler(&services, "music", "resume", music_resume);
   bind_handler(&services, "open", "file", open_file);
   bind_handler(&services, "open", "url", open_url);
+  bind_handler(&services, "apk", "open", apk_open);
+  bind_handler(&services, "apk", "list", apk_list);
+  bind_handler(&services, "apk", "scan", apk_scan);
 
   if (argc < 2) {
     print_help(PROGRAM_NAME);

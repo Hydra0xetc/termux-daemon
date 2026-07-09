@@ -2,7 +2,6 @@ package org.termux.daemon;
 
 import android.os.Looper;
 import java.util.ArrayList;
-import java.util.List;
 
 import java.io.File;
 
@@ -95,7 +94,6 @@ public class Main {
       logger.e(e.getMessage());
       System.exit(1);
     }
-
 
   }
 }

@@ -18,6 +18,7 @@ import org.termux.daemon.Service;
 import org.termux.daemon.service.ClipboardManager;
 import org.termux.daemon.service.ContentResolver;
 import org.termux.daemon.service.MusicPlayer;
+import org.termux.daemon.service.ApkManager;
 
 import static org.termux.daemon.Logger.LogLevel.INFO;
 
@@ -38,6 +39,9 @@ public class ApiServer {
         logger.e(TAG, "failed to parse services file" + e.getMessage());
         System.exit(1); // NOTE: maybe abort would be better
       }
+
+      // scan once in startup
+      new Thread(() -> ApkManager.scanApk()).start();
 
       Service.registerHandler(services,
         "clipboard", "get", (in, outRaw, client) -> {
@@ -166,6 +170,38 @@ public class ApiServer {
         "music", "resume", (in, outRaw, client) -> {
           try {
             MusicPlayer.resume();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+      });
+
+      Service.registerHandler(services,
+        "apk", "scan", (in, outRaw, client) -> {
+          try {
+            ApkManager.scanApk();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+      });
+
+      Service.registerHandler(services,
+        "apk", "open", (in, outRaw, client) -> {
+          try {
+            String apkName = readLine(in);
+            ApkManager.openApk(apkName);
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+      });
+
+      Service.registerHandler(services,
+        "apk", "list", (in, outRaw, client) -> {
+          PrintWriter out = new PrintWriter(outRaw, true);
+          try {
+            for (String apk : ApkManager.listApk()) {
+              out.println(apk);
+            }
+
           } catch (Exception e) {
             e.printStackTrace();
           }

@@ -67,8 +67,7 @@ public final class ClipboardManager {
         return "";
       }
 
-      CharSequence text =
-        data.getItemAt(0).getText();
+      CharSequence text = data.getItemAt(0).getText();
 
       return text != null
         ? text.toString()
