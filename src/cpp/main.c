@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include "config.h"
 
+#define DEFAULT_BUF_SIZE 1024
 #define UNUSED(s) (void)(s)
 
 typedef void (*ServiceHandler)(int argc, char **argv);
@@ -119,6 +120,23 @@ static inline char *__get_fullpath(char *path) {
   return fullpath;
 }
 
+static inline size_t __read_stdin(char *buf, int sock) {
+  ssize_t n;
+  while ((n = read(STDIN_FILENO, buf, sizeof(buf))) > 0) {
+    write(sock, buf, n);
+  }
+
+  return n;
+}
+
+static inline size_t __read_stdout(char *buf, int sock) {
+  ssize_t n;
+  while ((n = read(sock, buf, sizeof(buf))) > 0) {
+    write(STDOUT_FILENO, buf, n);
+  }
+  return n;
+}
+
 static int connect_server(void) {
   int sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -153,12 +171,8 @@ static void clipboard_get(int argc, char **argv) {
 
   write(sock, "clipboard get\n", 14);
 
-  char buf[4096];
-  ssize_t n;
-
-  while ((n = read(sock, buf, sizeof(buf))) > 0) {
-    write(STDOUT_FILENO, buf, n);
-  }
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
 
   shutdown(sock, SHUT_WR);
   close(sock);
@@ -178,12 +192,8 @@ static void clipboard_set(int argc, char **argv) {
       write(sock, argv[i], strlen(argv[i]));
     }
   } else {
-    char buf[4096];
-    ssize_t n;
-
-    while ((n = read(STDIN_FILENO, buf, sizeof(buf))) > 0) {
-      write(sock, buf, n);
-    }
+    char buf[DEFAULT_BUF_SIZE];
+    __read_stdin(buf, sock);
   }
 
   shutdown(sock, SHUT_WR);
@@ -207,12 +217,8 @@ static void open_file(int argc, char **argv) {
 
   shutdown(sock, SHUT_WR);
 
-  char buf[1024];
-  ssize_t n;
-
-  while ((n = read(sock, buf, sizeof(buf))) > 0) {
-    write(STDOUT_FILENO, buf, n);
-  }
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
 
   free(fullpath);
   close(sock);
@@ -231,12 +237,8 @@ static void open_url(int argc, char **argv) {
   dprintf(sock, "open url\n%s\n", argv[2]);
   shutdown(sock, SHUT_WR);
 
-  char buf[1024];
-  ssize_t n;
-
-  while ((n = read(sock, buf, sizeof(buf))) > 0) {
-    write(STDOUT_FILENO, buf, n);
-  }
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
 
   close(sock);
 }
@@ -251,8 +253,10 @@ static void music_play(int argc, char **argv) {
   char *fullpath = __get_fullpath(argv[2]);
 
   dprintf(sock, "music play\n%s\n", fullpath);
-
   shutdown(sock, SHUT_WR);
+
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
 
   free(fullpath);
   close(sock);
@@ -260,43 +264,42 @@ static void music_play(int argc, char **argv) {
 
 static void music_pause(int argc, char **argv) {
   UNUSED(argv);
-  if (argc != 2) {
-    fprintf(stderr, "usage: music pause\n");
-    exit(1);
-  }
+  UNUSED(argc);
 
   int sock = connect_server();
 
   dprintf(sock, "music pause\n");
   shutdown(sock, SHUT_WR);
 
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
+
   close(sock);
 }
 
 static void music_resume(int argc, char **argv) {
   UNUSED(argv);
-  if (argc != 2) {
-    fprintf(stderr, "usage: music resume\n");
-    exit(1);
-  }
+  UNUSED(argc);
 
   int sock = connect_server();
   dprintf(sock, "music resume\n");
   shutdown(sock, SHUT_WR);
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
   close(sock);
 }
 
 static void music_stop(int argc, char **argv) {
   UNUSED(argv);
-  if (argc != 2) {
-    fprintf(stderr, "usage: music stop\n");
-    exit(1);
-  }
-
+  UNUSED(argc);
   int sock = connect_server();
 
   dprintf(sock, "music stop\n");
   shutdown(sock, SHUT_WR);
+
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
+
   close(sock);
 }
 

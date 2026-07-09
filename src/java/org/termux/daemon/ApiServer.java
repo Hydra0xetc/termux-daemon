@@ -25,7 +25,6 @@ public class ApiServer {
   private static final String TAG = "SERVER";
   private static Logger logger = Logger.getInstance();
   private static List<Service> services;
-  private static PrintWriter out;
 
   public static void start(int port)
       throws Exception, java.net.BindException {
@@ -87,6 +86,7 @@ public class ApiServer {
 
       Service.registerHandler(services,
         "open", "file", (in, outRaw, client) -> {
+          PrintWriter out = new PrintWriter(outRaw, true);
 
           String path = readLine(in);
 
@@ -110,6 +110,7 @@ public class ApiServer {
 
       Service.registerHandler(services,
         "open", "url", (in, outRaw, client) -> {
+          PrintWriter out = new PrintWriter(outRaw, true);
           String url = readLine(in);
 
           if (url == null || url.isBlank()) {
@@ -122,6 +123,7 @@ public class ApiServer {
 
       Service.registerHandler(services,
         "music", "play", (in, outRaw, client) -> {
+          PrintWriter out = new PrintWriter(outRaw, true);
           String path = readLine(in);
 
           if (path == null || path.isBlank()) {
@@ -207,8 +209,8 @@ public class ApiServer {
         socket;
         InputStream in = socket.getInputStream();
         OutputStream outRaw = socket.getOutputStream();
+        PrintWriter out = new PrintWriter(outRaw, true);
         ) {
-      out = new PrintWriter(outRaw, true);
 
       String client =
         socket.getInetAddress()
