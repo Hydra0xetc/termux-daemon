@@ -1,5 +1,6 @@
 package org.termux.daemon;
 
+import android.os.Looper;
 import android.os.IBinder;
 import android.os.Bundle;
 import android.content.Intent;
@@ -8,8 +9,8 @@ import java.lang.reflect.Method;
 
 public class ActivityUtils {
   private Intent intent;
-  private String mime;
 
+  private static FakeContext fakeContext;
   private static Object sAmService;
   private static Method sStartActivityMethod;
   private static Class<?>[] sParamTypes;
@@ -19,14 +20,20 @@ public class ActivityUtils {
     this.intent = intent;
   }
 
-  public ActivityUtils(Intent intent, String mime) {
-    this.intent = intent;
-    this.mime = mime;
-  }
-
   private static synchronized void prepare() throws Exception {
+    if (Looper.getMainLooper() == null) {
+      Looper.prepare();
+    }
+
     if (sPrepared) {
       return;
+    }
+
+    // I don't understand why calling FakeContext needs Looper
+    try {
+      fakeContext = new FakeContext(FakeContext.getSystemContext());
+    } catch (Exception e) {
+      e.printStackTrace();
     }
 
     Object iam;
@@ -90,6 +97,10 @@ public class ActivityUtils {
       }
     }
 
+    String resolvedMime = intent.resolveTypeIfNeeded(
+      fakeContext.getContentResolver()
+    );
+
     for (int i = 0; i < sParamTypes.length; i++) {
       Class<?> t = sParamTypes[i];
       String tn = t.getName();
@@ -102,7 +113,7 @@ public class ActivityUtils {
           args[i] = "com.termux";
           firstStringUsed = true;
         } else if (intentIndex >= 0 && i == intentIndex + 1) {
-          args[i] = this.mime;
+          args[i] = resolvedMime;
         } else {
           args[i] = null;
         }

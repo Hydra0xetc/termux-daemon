@@ -67,7 +67,8 @@ public class FakeContext extends ContextWrapper {
         return base.getSharedPreferences(name, mode);
     }
 
-    @Override public ContentResolver getContentResolver() {
+    @Override
+    public ContentResolver getContentResolver() {
         return base.getContentResolver();
     }
 
