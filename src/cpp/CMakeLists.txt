@@ -25,7 +25,7 @@ target_include_directories(${PROGRAM_NAME} PRIVATE ${CMAKE_BINARY_DIR})
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "[*] Build DEBUG selected")
-  target_compile_options(${PROGRAM_NAME} PRIVATE -g -O0)
+  target_compile_options(${PROGRAM_NAME} PRIVATE -g -O0 -Wall -Wextra)
 
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   message(STATUS "[*] Build RELEASE selected")

@@ -211,8 +211,19 @@ public class ApiServer {
           }
       });
 
-      ServerSocket server = new ServerSocket(port);
+      Service.registerHandler(services,
+        "apk", "uninstall", (in, outRaw, client) -> {
+          PrintWriter out = new PrintWriter(outRaw, true);
+          try {
+            String apkName = readLine(in);
+            ApkManager.uninstallApk(apkName);
 
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+      });
+
+      ServerSocket server = new ServerSocket(port);
       System.out.println("Server listening on 127.0.0.1:" + port);
 
       while (true) {
@@ -238,10 +249,7 @@ public class ApiServer {
       return null;
     }
 
-    return new String(
-      buf.toByteArray(),
-      StandardCharsets.UTF_8
-    );
+    return new String(buf.toByteArray(), StandardCharsets.UTF_8);
   }
 
   private static void handle(Socket socket) {

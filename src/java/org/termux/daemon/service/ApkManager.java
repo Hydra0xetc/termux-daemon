@@ -1,5 +1,7 @@
 package org.termux.daemon.service;
 
+import android.net.Uri;
+
 import android.os.Looper;
 
 import android.content.Context;
@@ -107,4 +109,24 @@ public class ApkManager {
     Collections.sort(apkList);
     return apkList;
   }
+
+  public static String uninstallApk(String apkName) {
+    if (entryList.isEmpty()) {
+      scanApk();
+    }
+
+    ApkEntry entry = entryList.get(apkName);
+    if (entry == null) {
+      return "ERROR: could not found apk: " + apkName;
+    }
+
+    logger.d(TAG, entry.packageName);
+
+    Uri packageUri = Uri.parse("package:" + entry.packageName);
+    Intent intent = new Intent(Intent.ACTION_DELETE, packageUri);
+    new ActivityUtils(intent).startActivity();
+
+    return null;
+  }
+
 }

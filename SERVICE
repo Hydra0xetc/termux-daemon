@@ -1,4 +1,4 @@
 clipboard:get,set
 music:play,pause,stop,resume
 open:file,url
-apk:open,scan,list
+apk:open,scan,list,uninstall

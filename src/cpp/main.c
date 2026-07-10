@@ -108,13 +108,12 @@ static void bind_handler(Services *services, const char *service,
   fprintf(stderr, "warning: no such command to bind: %s:%s\n", service, cmd);
 }
 
-static inline char *__get_fullpath(char *path) {
-  char *fullpath = malloc(PATH_MAX);
+static inline char *__get_fullpath(const char *path) {
+  char *fullpath = realpath(path, NULL);
 
-  if (realpath(path, fullpath) == NULL) {
-    fprintf(stderr, "failed to get path '%s': %s\n", path,
-        strerror(errno));
-    exit(1);
+  if (!fullpath) {
+    fprintf(stderr, "failed to open: %s: %s\n", path, strerror(errno));
+    exit(EXIT_FAILURE);
   }
 
   return fullpath;
@@ -336,9 +335,28 @@ static void apk_list(int argc, char **argv) {
 }
 
 static void apk_scan(int argc, char **argv) {
+  UNUSED(argv);
+  UNUSED(argc);
   int sock = connect_server();
 
   dprintf(sock, "apk scan\n");
+  shutdown(sock, SHUT_WR);
+
+  char buf[DEFAULT_BUF_SIZE];
+  __read_stdout(buf, sock);
+  close(sock);
+}
+
+static void apk_uninstall(int argc, char **argv) {
+
+  if (argc != 3) {
+    fprintf(stderr, "Usage: apk uninstall <apkname>\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int sock = connect_server();
+
+  dprintf(sock, "apk uninstall\n%s\n", argv[2]);
   shutdown(sock, SHUT_WR);
 
   char buf[DEFAULT_BUF_SIZE];
@@ -405,6 +423,7 @@ int main(int argc, char **argv) {
   bind_handler(&services, "apk", "open", apk_open);
   bind_handler(&services, "apk", "list", apk_list);
   bind_handler(&services, "apk", "scan", apk_scan);
+  bind_handler(&services, "apk", "uninstall", apk_uninstall);
 
   if (argc < 2) {
     print_help(PROGRAM_NAME);
@@ -416,7 +435,7 @@ int main(int argc, char **argv) {
     if (!strncmp(argv[i], "-l", 2) ||
         !strncmp(argv[i], "--list-service", 14)) {
       printf("Available services: \n");
-      for (int j = 0; j < services.count; j++) {
+      for (size_t j = 0; j < services.count; j++) {
         printf("    %s\n", services.items[j].name);
       }
       arr_free(&services);
