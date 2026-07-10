@@ -30,11 +30,10 @@ android-daemon clipboard get
 Here, `clipboard` is the service and `get` is the subcommand.
 Below is the list of available services:
 ```
-$ android-daemon
-usage:
-  android-daemon clipboard [get|set]
-  android-daemon music [play|stop|resume|pause]
-  android-daemon open [file|url]
+clipboard [get|set]
+music     [play|pause|stop|resume]
+open      [file|url]
+apk       [open|scan|list|uninstall]
 ```
 
 ## Idea
