@@ -109,6 +109,7 @@ public class ApiServer {
 
           } catch (Exception e) {
             e.printStackTrace();
+            out.println("ERROR: " + e.getMessage());
           }
       });
 
@@ -145,6 +146,7 @@ public class ApiServer {
 
           } catch (Exception e) {
             e.printStackTrace();
+            out.println("ERROR: " + e.getMessage());
           }
       });
 
@@ -159,35 +161,44 @@ public class ApiServer {
 
       Service.registerHandler(services,
         "music", "pause", (in, outRaw, client) -> {
+          PrintWriter out = new PrintWriter(outRaw, true);
           try {
             MusicPlayer.pause();
           } catch (Exception e) {
             e.printStackTrace();
+            out.println("ERROR: " + e.getMessage());
           }
       });
 
       Service.registerHandler(services,
         "music", "resume", (in, outRaw, client) -> {
+          PrintWriter out = new PrintWriter(outRaw, true);
           try {
             MusicPlayer.resume();
           } catch (Exception e) {
             e.printStackTrace();
+            out.println("ERROR: " + e.getMessage());
           }
       });
 
       Service.registerHandler(services,
         "apk", "scan", (in, outRaw, client) -> {
+          PrintWriter out = new PrintWriter(outRaw, true);
           try {
-            ApkManager.scanApk();
+            String msg = ApkManager.scanApk();
+            if (msg != null) {
+              out.println(msg);
+            }
           } catch (Exception e) {
             e.printStackTrace();
+            out.println("ERROR: " + e.getMessage());
           }
       });
 
       Service.registerHandler(services,
         "apk", "open", (in, outRaw, client) -> {
+          PrintWriter out = new PrintWriter(outRaw, true);
           try {
-            PrintWriter out = new PrintWriter(outRaw, true);
             String apkName = readLine(in);
             String msg = ApkManager.openApk(apkName);
             if (msg != null) {
@@ -195,6 +206,7 @@ public class ApiServer {
             }
           } catch (Exception e) {
             e.printStackTrace();
+            out.println("ERROR: " + e.getMessage());
           }
       });
 
@@ -208,6 +220,7 @@ public class ApiServer {
 
           } catch (Exception e) {
             e.printStackTrace();
+            out.println("ERROR: " + e.getMessage());
           }
       });
 
@@ -220,6 +233,7 @@ public class ApiServer {
 
           } catch (Exception e) {
             e.printStackTrace();
+            out.println("ERROR: " + e.getMessage());
           }
       });
 

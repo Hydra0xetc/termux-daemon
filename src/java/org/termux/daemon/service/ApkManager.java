@@ -49,7 +49,7 @@ public class ApkManager {
   private static HashMap<String, ApkEntry> entryList = new HashMap<>();
   private static Logger logger = Logger.getInstance();
 
-  public static void scanApk() {
+  public static String scanApk() {
     if (Looper.getMainLooper() == null) {
       Looper.prepare();
     }
@@ -76,8 +76,11 @@ public class ApkManager {
         entryList = newEntryList;
       }
 
+      return "INFO: Done scanning...";
+
     } catch (Exception e) {
       e.printStackTrace();
+      return "ERROR: failed to scan: " + e.getMessage();
     }
 
   }

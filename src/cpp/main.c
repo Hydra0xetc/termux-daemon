@@ -254,6 +254,8 @@ static void music_play(int argc, char **argv) {
   dprintf(sock, "music play\n%s\n", fullpath);
   shutdown(sock, SHUT_WR);
 
+  // BUG: music play cause hang in stdin not sure why its like
+  // a running cat command without a argument
   // char buf[DEFAULT_BUF_SIZE];
   // __read_stdout(buf, sock);
 
