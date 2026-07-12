@@ -14,9 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import org.termux.daemon.ActivityUtils;
-import org.termux.daemon.FakeContext;
-import org.termux.daemon.Logger;
+import org.termux.util.Logger;
 
 class ApkEntry {
   public String packageName;
@@ -49,14 +47,13 @@ public class ApkManager {
   private static HashMap<String, ApkEntry> entryList = new HashMap<>();
   private static Logger logger = Logger.getInstance();
 
-  public static String scanApk() {
+  public static String scanApk(Context context) {
     if (Looper.getMainLooper() == null) {
       Looper.prepare();
     }
 
     try {
-      PackageManager pm =
-        FakeContext.getSystemContext().getPackageManager();
+      PackageManager pm = context.getPackageManager();
       Intent intent = new Intent(Intent.ACTION_MAIN)
         .addCategory(Intent.CATEGORY_LAUNCHER);
       List<ResolveInfo> resolverInfos = pm.queryIntentActivities(intent, 0);
@@ -85,9 +82,9 @@ public class ApkManager {
 
   }
 
-  public static String openApk(String apkName) {
+  public static String openApk(Context context, String apkName) {
     if (entryList.isEmpty()) {
-      scanApk();
+      scanApk(context);
     }
 
     ApkEntry entry = entryList.get(apkName);
@@ -99,13 +96,13 @@ public class ApkManager {
       .setClassName(entry.packageName, entry.className)
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-    new ActivityUtils(intent).startActivity();
+    context.startActivity(intent);
     return null;
   }
 
-  public static List<String> listApk() {
+  public static List<String> listApk(Context context) {
     if (entryList.isEmpty()) {
-      scanApk();
+      scanApk(context);
     }
 
     List<String> apkList = new ArrayList<>(entryList.keySet());
@@ -113,9 +110,9 @@ public class ApkManager {
     return apkList;
   }
 
-  public static String uninstallApk(String apkName) {
+  public static String uninstallApk(Context context, String apkName) {
     if (entryList.isEmpty()) {
-      scanApk();
+      scanApk(context);
     }
 
     ApkEntry entry = entryList.get(apkName);
@@ -127,7 +124,7 @@ public class ApkManager {
 
     Uri packageUri = Uri.parse("package:" + entry.packageName);
     Intent intent = new Intent(Intent.ACTION_DELETE, packageUri);
-    new ActivityUtils(intent).startActivity();
+    context.startActivity(intent);
 
     return null;
   }

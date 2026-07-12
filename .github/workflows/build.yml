@@ -77,7 +77,7 @@ jobs:
         run: |
           PKG="termux-daemon-${VERSION}-${{ matrix.arch }}-debug"
           mkdir "$PKG"
-          cp -a build/termux-daemon-${{ matrix.arch }}-debug/. "$PKG/"
+          cp -a build/termux-daemon-${VERSION}-${{ matrix.arch }}-debug/. "$PKG/"
           tar -cvzf "${PKG}.tar.gz" "$PKG"
 
       - name: Build release
@@ -90,7 +90,7 @@ jobs:
         run: |
           PKG="termux-daemon-${VERSION}-${{ matrix.arch }}-release"
           mkdir "$PKG"
-          cp -a build/termux-daemon-${{ matrix.arch }}-release/. "$PKG/"
+          cp -a build/termux-daemon-${VERSION}-${{ matrix.arch }}-release/. "$PKG/"
           tar -cvzf "${PKG}.tar.gz" "$PKG"
 
       - name: Upload Release

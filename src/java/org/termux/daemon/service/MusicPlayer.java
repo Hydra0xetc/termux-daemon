@@ -5,9 +5,9 @@ import android.os.Looper;
 
 import java.io.IOException;
 
-import org.termux.daemon.Logger;
+import org.termux.util.Logger;
 
-import static org.termux.daemon.Logger.LogLevel.*;
+import static org.termux.util.Logger.LogLevel.*;
 
 public class MusicPlayer {
   private static final String TAG = "MusicPlayer";

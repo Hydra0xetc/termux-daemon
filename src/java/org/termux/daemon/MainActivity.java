@@ -1,9 +1,13 @@
 package org.termux.daemon;
 
 import android.os.Looper;
+import android.os.Bundle;
 
 import java.util.ArrayList;
 import java.io.File;
+
+import org.termux.entry.CLIActivity;
+import org.termux.util.Logger;
 
 class Arg<T> {
   public final String flag;
@@ -29,9 +33,13 @@ class Arg<T> {
 
 }
 
-public class Main {
+public class MainActivity extends CLIActivity {
   private static final String TAG = "Main";
   private static Logger logger = Logger.getInstance();
+
+  private Arg<Integer> port;
+  private Arg<Boolean> help;
+  private Arg<String> version;
 
   private static void printHelp(String programName,
       ArrayList<Arg> argsParse) {
@@ -54,17 +62,18 @@ public class Main {
     return String.format("%s-%s", version, buildType);
   }
 
-  public static void main(String[] args) throws Exception {
-    if (Looper.getMainLooper() == null) {
-      Looper.prepare();
-    }
+  @Override
+  protected void onCreate(Bundle savedInstance) {
+    super.onCreate(savedInstance);
 
-    Arg<Integer> port
-      = new Arg<>("--port", Config.PORT, "listening port");
-    Arg<Boolean> help
-      = new Arg<>("--help", false, "print this help message");
-    Arg<String> version
-      = new Arg<>("--version", getVerAndBuildType(), "show version");
+    port = new Arg<>("--port", Config.PORT, "listening port");
+    help = new Arg<>("--help", false, "print this help message");
+    version = new Arg<>("--version", getVerAndBuildType(), "show version");
+
+  }
+
+  @Override
+  protected void onParseArgs(String[] args) {
 
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals(help.flag)) {
@@ -89,10 +98,13 @@ public class Main {
     }
 
     try {
-      ApiServer.start(port.value);
-    } catch (java.net.BindException e) {
-      logger.e(e.getMessage());
+      ApiServer.start(port.value, this);
+    } catch (java.net.BindException e1) {
+      logger.e(e1.getMessage());
       System.exit(1);
+    } catch (Exception e2) {
+      logger.e(TAG, "Unexpected error: " + e2.getMessage());
+      e2.printStackTrace();
     }
 
   }

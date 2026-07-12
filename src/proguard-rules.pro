@@ -1,7 +1,8 @@
+-keep public class org.termux.entry.Cli {
+  public static void main(java.lang.String[]);
+}
 
-
--keep public class org.termux.daemon.Main {
-    public static void main(java.lang.String[]);
+-keep public class org.termux.daemon.MainActivity {
 }
 
 # obfuscating stubClass cause RuntimeException
@@ -12,6 +13,6 @@
 ############################################
 ## Delete debug logging
 ############################################
--assumenosideeffects class org.termux.daemon.Logger {
-    public void d(...);
+-assumenosideeffects class org.termux.util.Logger {
+  public void d(...);
 }

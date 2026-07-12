@@ -1,4 +1,4 @@
-package org.termux.daemon;
+package org.termux.util;
 
 public class Logger {
   private static Logger instance;

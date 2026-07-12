@@ -1,6 +1,6 @@
 package org.termux.daemon;
 
-import static org.termux.daemon.Logger.LogLevel;
+import static org.termux.util.Logger.LogLevel;
 
 public class Config {
   public static String PROGRAM_NAME = "termux-daemon";

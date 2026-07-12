@@ -126,7 +126,7 @@ process_dex ()
 
 __create_script_runner ()
 {
-  ENTRY_CLASS=$(echo "$PACKAGE_NAME" | tr / .).Main
+  ENTRY_CLASS=org.termux.entry.Cli
   # NOTE: Maybe the version and build type information
   # should be stored in $SHARE_DIR/INFO or something similar.
   content=$(cat << EOF
@@ -145,11 +145,17 @@ export CLASSPATH=\$HERE/../share/$SCRIPT_NAME/$OUTPUT_APK
 
 : "\${ART_OPTS:=-Xmx10m -Xnoimage-dex2oat}"
 
-if [ -f "\$CLASSPATH" ]; then
+if [ ! -f "\$CLASSPATH" ]; then
+  echo "cannot found: \$CLASSPATH"
+  exit 127
+fi
+
+if [ "\$VERBOSE" = "true" ]; then
   exec app_process64 \$ART_OPTS / "$ENTRY_CLASS" "\$@"
 else
-  echo "cannot found: \$CLASSPATH"
+  exec app_process64 \$ART_OPTS / "$ENTRY_CLASS" "\$@" 2>/dev/null
 fi
+
 
 EOF
   )
@@ -175,7 +181,7 @@ package_all ()
   cp LICENSE "$SHARE_DIR"
   cp SERVICE "$SHARE_DIR"
 
-  echo "[*] Done build termux-daemon-$ANDROID_ABI-$BUILD_TYPE"
+  echo "[*] Done build termux-daemon-$VERSION-$ANDROID_ABI-$BUILD_TYPE"
 }
 
 __resolve_native_tools ()

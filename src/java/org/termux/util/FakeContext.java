@@ -1,12 +1,15 @@
-package org.termux.daemon;
+package org.termux.util;
 
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.SharedPreferences;
+
 import java.io.File;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Field;
 
 public class FakeContext extends ContextWrapper {
 
@@ -15,9 +18,21 @@ public class FakeContext extends ContextWrapper {
     private final Context base;
     private static Logger logger = Logger.getInstance();
 
+    public FakeContext() {
+      this(getSystemContextUnchecked());
+    }
+
     public FakeContext(Context base) {
-        super(base);
-        this.base = base;
+      super(base);
+      this.base = base;
+    }
+
+    private static Context getSystemContextUnchecked() {
+      try {
+        return getSystemContext();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Override
@@ -74,7 +89,6 @@ public class FakeContext extends ContextWrapper {
 
     @Override
     public Object getSystemService(String name) {
-        logger.d("FakeContext", "getSystemService: " + name);
         return base.getSystemService(name);
     }
 
@@ -85,7 +99,19 @@ public class FakeContext extends ContextWrapper {
         Object at = ctor.newInstance();
         Method getCtx = at.getClass().getDeclaredMethod("getSystemContext");
         getCtx.setAccessible(true);
-        return (Context) getCtx.invoke(at);
+        Context ctx = (Context) getCtx.invoke(at);
+
+        // force package name to `FAKE_PACKAGE`
+        Field f = ctx.getClass().getDeclaredField("mBasePackageName");
+        f.setAccessible(true);
+        f.set(ctx, FAKE_PACKAGE);
+
+        Field f2 = ctx.getClass().getDeclaredField("mOpPackageName");
+        f2.setAccessible(true);
+        f2.set(ctx, FAKE_PACKAGE);
+
+        return ctx;
+
     }
 
     private static File ensureDir(String path) {

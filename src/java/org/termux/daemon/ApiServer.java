@@ -1,5 +1,7 @@
 package org.termux.daemon;
 
+import android.content.Context;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,19 +17,20 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
 import org.termux.daemon.Service;
-import org.termux.daemon.service.ClipboardManager;
+import org.termux.daemon.service.ClipboardService;
 import org.termux.daemon.service.ContentResolver;
 import org.termux.daemon.service.MusicPlayer;
 import org.termux.daemon.service.ApkManager;
 
-import static org.termux.daemon.Logger.LogLevel.INFO;
+import org.termux.util.Logger;
+import static org.termux.util.Logger.LogLevel.INFO;
 
 public class ApiServer {
   private static final String TAG = "SERVER";
   private static Logger logger = Logger.getInstance();
   private static List<Service> services;
 
-  public static void start(int port)
+  public static void start(int port, Context context)
       throws Exception, java.net.BindException {
 
       File classpath = new File(System.getProperty("java.class.path"));
@@ -41,13 +44,13 @@ public class ApiServer {
       }
 
       // scan once in startup
-      new Thread(() -> ApkManager.scanApk()).start();
+      new Thread(() -> ApkManager.scanApk(context)).start();
 
       Service.registerHandler(services,
         "clipboard", "get", (in, outRaw, client) -> {
 
           long t0 = System.nanoTime();
-          String content = ClipboardManager.get();
+          String content = ClipboardService.get(context);
           long t1 = System.nanoTime();
 
           if (Config.LOG_LEVEL == INFO) {
@@ -77,7 +80,7 @@ public class ApiServer {
             new String(buf.toByteArray(), StandardCharsets.UTF_8);
 
           long t1 = System.nanoTime();
-          ClipboardManager.set(content);
+          ClipboardService.set(context, content);
           long t2 = System.nanoTime();
 
           if (Config.LOG_LEVEL == INFO) {
@@ -100,7 +103,7 @@ public class ApiServer {
           }
 
           try {
-            ContentResolver.file(path, null);
+            ContentResolver.file(context, path, null);
 
             if (Config.LOG_LEVEL == INFO) {
               logger.i(TAG,
@@ -123,7 +126,7 @@ public class ApiServer {
             return;
           }
 
-          ContentResolver.url(url);
+          ContentResolver.url(context, url);
       });
 
       Service.registerHandler(services,
@@ -185,7 +188,7 @@ public class ApiServer {
         "apk", "scan", (in, outRaw, client) -> {
           PrintWriter out = new PrintWriter(outRaw, true);
           try {
-            String msg = ApkManager.scanApk();
+            String msg = ApkManager.scanApk(context);
             if (msg != null) {
               out.println(msg);
             }
@@ -200,7 +203,7 @@ public class ApiServer {
           PrintWriter out = new PrintWriter(outRaw, true);
           try {
             String apkName = readLine(in);
-            String msg = ApkManager.openApk(apkName);
+            String msg = ApkManager.openApk(context, apkName);
             if (msg != null) {
               out.println(msg);
             }
@@ -214,7 +217,7 @@ public class ApiServer {
         "apk", "list", (in, outRaw, client) -> {
           PrintWriter out = new PrintWriter(outRaw, true);
           try {
-            for (String apk : ApkManager.listApk()) {
+            for (String apk : ApkManager.listApk(context)) {
               out.println(apk);
             }
 
@@ -229,7 +232,7 @@ public class ApiServer {
           PrintWriter out = new PrintWriter(outRaw, true);
           try {
             String apkName = readLine(in);
-            ApkManager.uninstallApk(apkName);
+            ApkManager.uninstallApk(context, apkName);
 
           } catch (Exception e) {
             e.printStackTrace();
