@@ -19,6 +19,10 @@ public class Cli {
 
       CLIActivity activity =
         // for now lets just hardcoded
+        // TODO: make a implementation to start
+        // not a single activity but can run another CLIActivity
+        //
+        // NOTE: i think this is can be implementation of CLIstartActivity
         (CLIActivity) Class.forName("org.termux.daemon.MainActivity")
         .getDeclaredConstructor()
         .newInstance();
