@@ -16,7 +16,7 @@ start_termux_daemon() {
   nc -z 127.0.0.1 "$PORT" 2>/dev/null &&
     return
 
-  setsid termux-daemon --port "$PORT" &>>"$LOG" 2>&1 &
+  VERBOSE=true setsid termux-daemon --port "$PORT" &>>"$LOG" 2>&1 &
 }
 
 start_termux_daemon
