@@ -36,6 +36,14 @@ open      [file|url]
 apk       [open|scan|list|uninstall]
 ```
 
+also you can provide a options to `app_process` by set environment var
+`ART_OPTS` for example
+```bash
+ART_OPTS="-Xmx512m -Xnoimage-dex2oat" termux-daemon
+# use 512 mb for the ART
+```
+default `ART_OPTS` is `-Xmx10m -Xnoimage-dex2oat`
+
 ## Idea
 I noticed that Termux scripts always run through the `am` command, so I
 looked into it a bit and found that it's actually android JVM (`app_process` or

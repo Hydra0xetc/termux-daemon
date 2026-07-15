@@ -63,7 +63,8 @@ process_java ()
 {
   mkdir -p "$JAVA_BUILD_DIR"
   SOURCE_FILE="$JAVA_BUILD_DIR/sources.txt"
-  find "$JAVA_SRC_DIR" -name "*.java" > "$SOURCE_FILE"
+
+  find "$(realpath "$JAVA_SRC_DIR")" -name "*.java" > "$SOURCE_FILE"
 
   # skip only if source change
   if [[ -n $(find "$JAVA_SRC_DIR" -name "*.java" -newer "$JAVA_BUILD_DIR/.stamp" 2>/dev/null)
