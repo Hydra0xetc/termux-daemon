@@ -22,7 +22,11 @@ public final class ClipboardService {
   }
 
   public static String get(Context context) {
-    prepare(context);
+    if (clipboard == null) {
+      logger.d(TAG, "logger is null prepare it only if ClipboardManager is null");
+      prepare(context);
+    }
+
     ClipData clip = clipboard.getPrimaryClip();
 
     if (clip == null || clip.getItemCount() == 0) {
@@ -36,7 +40,10 @@ public final class ClipboardService {
   }
 
   public static void set(Context context, String text) {
-    prepare(context);
+    if (clipboard == null) {
+      logger.d(TAG, "logger is null prepare it only if ClipboardManager is null");
+      prepare(context);
+    }
     ClipData clip = ClipData.newPlainText("label", text);
     clipboard.setPrimaryClip(clip);
   }
