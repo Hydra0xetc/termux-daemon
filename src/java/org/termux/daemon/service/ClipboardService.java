@@ -23,7 +23,7 @@ public final class ClipboardService {
 
   public static String get(Context context) {
     if (clipboard == null) {
-      logger.d(TAG, "logger is null prepare it only if ClipboardManager is null");
+      logger.d(TAG, "clipboard is null prepare it only if ClipboardManager is null");
       prepare(context);
     }
 
