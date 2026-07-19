@@ -240,6 +240,8 @@ process_cpp ()
 
 __handle_build ()
 {
+  resolve_deps
+
   if [[ $# -eq 0 ]]; then
     __handle_build cpp java
     return
